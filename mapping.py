@@ -14,9 +14,9 @@ class Map:
         except Exception as e:
             print(f"Error in map initialization: {e}")
 
-    def update_map(self, obstacle_data, robot_position):
+    def update_map(self, combined_obstacle_data, robot_position):
         try:
-            for x, y in obstacle_data:
+            for x, y in combined_obstacle_data:
                 if 0 <= x < self.width and 0 <= y < self.height:
                     self.grid[y, x] = 255  # Mark as occupied
 
@@ -34,28 +34,28 @@ class Map:
         except Exception as e:
             print(f"Error in map visualization: {e}")
 
-    def save_map(self, file_path):
+
+    def save_map(self, file_path="map_image.png"):
         try:
             cv2.imwrite(file_path, self.grid)
         except Exception as e:
             print(f"Error in saving map image: {e}")
 
-    def schedule_map_update(self, interval):
-        try:
-            import time
-            import threading
 
-            def periodic_update():
-                self.update_map()
-                self.save_map()
-                threading.Timer(interval, periodic_update).start()
+    def schedule_map_update(self, interval, obstacle_detector, localization):
+        import threading
 
-            periodic_update()
-        except Exception as e:
-            print(f"Error in scheduling map updates: {e}")
+        def periodic_update():
+            combined_obstacle_data = obstacle_detector.get_obstacle_data()
+            robot_position = localization.get_current_position()
+            self.update_map(combined_obstacle_data, robot_position)
+            self.save_map()  # Update the save_map() method to include a default file_path
+            threading.Timer(interval, periodic_update).start()
+
+        periodic_update()
 
     def get_path_image(self, path):
         path_image = self.grid.copy()
-        path_points = np.array(path, dtype=np.int)
+        path_points = np.array(path, dtype=np.int_)
         path_image[path_points[:, 1], path_points[:, 0]] = 128
         return path_image

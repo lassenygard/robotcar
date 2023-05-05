@@ -9,12 +9,15 @@ from flask import Flask, Response
 
 class PiCameraModule:
     def __init__(self, resolution=(640, 480), framerate=30):
+
         self.camera = PiCamera()
         self.camera.resolution = resolution
         self.camera.framerate = framerate
         self.raw_capture = PiRGBArray(self.camera, size=resolution)
         self.streaming = False
         self.stream_thread = None
+        import atexit
+        atexit.register(self.cleanup)
         time.sleep(0.1)
 
     def capture_image(self, output_format="rgb", as_array=False):
@@ -32,14 +35,14 @@ class PiCameraModule:
 
     def stop_streaming(self):
         self.streaming = False
-        self.stream_thread.join()
+        if self.stream_thread is not None: self.stream_thread.join()
 
     def stream(self):
         def gen():
             while self.streaming:
                 frame = self.capture_image(output_format="jpeg", as_array=True)
                 yield (b'--frame\r\n'
-                       b'Content-Type: image/jpeg\r\n\r\n' + frame.tobytes() + b'\r\n')
+                       b'Content-Type: image/jpeg\r\n\r\n' + bytes(frame) + b'\r\n')
         app = Flask(__name__)
 
         @app.route('/video_feed')

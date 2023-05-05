@@ -59,7 +59,7 @@ class Pathfinder:
     def visualize_path(self, path):
         plt.imshow(self.map.grid, cmap='gray', origin='lower')
         plt.plot([point[0] for point in path], [point[1] for point in path], 'r-')
-        plt.scatter([path[0][0], path[-1][0]], [path[0][1], path[-1][1]], c='blue', marker='o', s=50)
+        plt.scatter([path[0][0], path[-1][0]], [path[0][1], path[-1][1]], c='blue', marker=MarkerStyle('o'), s=50)
         plt.title('Pathfinding Visualization')
         plt.xlabel('X-axis')
         plt.ylabel('Y-axis')

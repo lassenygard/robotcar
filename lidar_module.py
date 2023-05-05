@@ -1,6 +1,5 @@
 # lidar_module.py
 
-import rplidar
 from rplidar import RPLidar
 
 class RPLidarModule:

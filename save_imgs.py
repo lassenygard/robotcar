@@ -28,7 +28,7 @@ def save_map_data(map_instance, base_path="maps"):
     return map_data
 
 
-def save_path_data(path, map_data, base_path="paths"):
+def save_path_data(path, map_data, map_instance, base_path="paths"):
     timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     path_data = {
         "timestamp": timestamp,

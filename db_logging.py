@@ -5,9 +5,6 @@ import hashlib
 import json
 from datetime import datetime
 
-# Database connection parameters
-DB_CONFIG = load_db_config()
-
 def load_db_config(file_path='db_config.json'):
     try:
         with open(file_path, 'r') as f:
@@ -19,6 +16,9 @@ def load_db_config(file_path='db_config.json'):
     except json.JSONDecodeError:
         print("Error decoding database configuration JSON.")
         return None
+
+# Database connection parameters
+DB_CONFIG = load_db_config()
 
 def create_connection():
     if DB_CONFIG is None:

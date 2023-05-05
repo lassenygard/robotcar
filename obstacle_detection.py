@@ -4,6 +4,8 @@ import cv2
 import numpy as np
 from camera_module import PiCameraModule
 from lidar_module import RPLidarModule
+from camera_rotation import CameraRotation
+
 
 class ObstacleDetector:
     def __init__(self, camera_module, lidar_module=None, camera_settings=None, detection_thresholds=None):
@@ -96,7 +98,7 @@ class ObstacleDetector:
 
                 # Combine camera and lidar obstacle data
                 combined_obstacle_data = obstacle_data + lidar_obstacles
-            else
+            else:
                 combined_obstacle_data = obstacle_data
 
             return combined_obstacle_data
