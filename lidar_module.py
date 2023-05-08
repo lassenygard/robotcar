@@ -4,14 +4,23 @@ from rplidar import RPLidar
 
 class RPLidarModule:
     def __init__(self):
+        self.lidar = None
+
         try:
-            self.lidar = RPLidar('/dev/ttyUSB0')
-            self.lidar.set_pwm(660)  # Set the motor speed
-            self.lidar.connect()  # Connect to the RPLidar device
-            print("RPLidar successfully initialized.")
+            if self.is_lidar_available():
+                self.lidar = RPLidar('/dev/ttyUSB0')
+                self.lidar.set_pwm(660)  # Set the motor speed
+                self.lidar.connect()  # Connect to the RPLidar device
+                print("RPLidar successfully initialized.")
+            else:
+                print("RPLidar not available.")
         except Exception as e:
             print(f"Error initializing RPLidar: {e}")
-            self.lidar = None
+
+    def is_lidar_available(self):
+        import os
+
+        return os.path.exists('/dev/ttyUSB0')
 
     def get_scan_data(self):
         if self.lidar is None:

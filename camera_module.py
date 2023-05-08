@@ -1,19 +1,18 @@
-#camera_module.py
+# camera_module.py
 
 import io
 import time
 import threading
-from picamera import PiCamera
-from picamera.array import PiRGBArray
+import cv2
+import numpy as np
 from flask import Flask, Response
 
 class PiCameraModule:
     def __init__(self, resolution=(640, 480), framerate=30):
-
-        self.camera = PiCamera()
-        self.camera.resolution = resolution
-        self.camera.framerate = framerate
-        self.raw_capture = PiRGBArray(self.camera, size=resolution)
+        self.camera = cv2.VideoCapture(0)
+        self.camera.set(cv2.CAP_PROP_FRAME_WIDTH, resolution[0])
+        self.camera.set(cv2.CAP_PROP_FRAME_HEIGHT, resolution[1])
+        self.camera.set(cv2.CAP_PROP_FPS, framerate)
         self.streaming = False
         self.stream_thread = None
         import atexit
@@ -21,12 +20,14 @@ class PiCameraModule:
         time.sleep(0.1)
 
     def capture_image(self, output_format="rgb", as_array=False):
-        self.raw_capture.truncate(0)
-        self.camera.capture(self.raw_capture, format=output_format, use_video_port=True)
+        ret, frame = self.camera.read()
+        if output_format == "rgb":
+            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         if as_array:
-            return self.raw_capture.array
+            return frame
         else:
-            return self.raw_capture.getvalue()
+            ret, buffer = cv2.imencode(".jpg", frame)
+            return io.BytesIO(buffer)
 
     def start_streaming(self):
         self.streaming = True
@@ -35,14 +36,16 @@ class PiCameraModule:
 
     def stop_streaming(self):
         self.streaming = False
-        if self.stream_thread is not None: self.stream_thread.join()
+        if self.stream_thread is not None:
+            self.stream_thread.join()
 
     def stream(self):
         def gen():
             while self.streaming:
-                frame = self.capture_image(output_format="jpeg", as_array=True)
+                frame = self.capture_image(output_format="bgr", as_array=True)
+                ret, jpeg = cv2.imencode('.jpg', frame)
                 yield (b'--frame\r\n'
-                       b'Content-Type: image/jpeg\r\n\r\n' + bytes(frame) + b'\r\n')
+                       b'Content-Type: image/jpeg\r\n\r\n' + jpeg.tobytes() + b'\r\n')
         app = Flask(__name__)
 
         @app.route('/video_feed')
@@ -54,4 +57,4 @@ class PiCameraModule:
     def cleanup(self):
         if self.streaming:
             self.stop_streaming()
-        self.camera.close()
+        self.camera.release()

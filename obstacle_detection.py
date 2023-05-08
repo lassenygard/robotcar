@@ -71,7 +71,7 @@ class ObstacleDetector:
             rotation_steps = 512 // num_frames
             for i in range(num_frames):
                 # Capture a frame from the camera module
-                frame = self.camera_module.capture_frame()
+                frame = self.camera_module.capture_image()
 
                 # Preprocess the frame
                 preprocessed_frame = self.preprocess_frame(frame)
@@ -90,28 +90,33 @@ class ObstacleDetector:
             self.camera_rotation.rotate_left(rotation_steps * (num_frames - 1))
 
             if self.lidar_module is not None:
-                # Get scan data from the lidar module
-                scan_data = self.lidar_module.get_scan_data()
+                try:
+                    # Get scan data from the lidar module
+                    scan_data = self.lidar_module.get_scan_data()
 
-                # Process the lidar data
-                lidar_obstacles = self.process_lidar_data(scan_data)
+                    # Process the lidar data
+                    lidar_obstacles = self.process_lidar_data(scan_data)
 
-                # Combine camera and lidar obstacle data
-                combined_obstacle_data = obstacle_data + lidar_obstacles
+                    # Combine camera and lidar obstacle data
+                    combined_obstacle_data = obstacle_data + lidar_obstacles
+                except Exception as e:
+                    print(f"Error in lidar data acquisition and processing: {e}")
+                    combined_obstacle_data = obstacle_data
             else:
                 combined_obstacle_data = obstacle_data
 
             return combined_obstacle_data
         except Exception as e:
             print(f"Error in obstacle data acquisition and processing: {e}")
-            return []
+            return obstacle_data  # Return camera-obtained obstacle data even if an error occurs
+
 
     def get_obstacle_data_from_camera(self):
         try:
             wall_detected = False
 
             # Capture a frame from the camera module
-            frame = self.camera_module.capture_frame()
+            frame = self.camera_module.capture_image()
 
             # Preprocess the frame
             preprocessed_frame = self.preprocess_frame(frame)
