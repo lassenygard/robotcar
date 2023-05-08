@@ -13,7 +13,7 @@ class ObstacleDetector:
         self.lidar_module = lidar_module
         self.camera_settings = camera_settings or {}
         self.detection_thresholds = detection_thresholds or {}
-        self.camera_rotation = CameraRotation(pins=[17, 18, 27, 22])
+        self.camera_rotation = CameraRotation(pins=[2, 3, 4, 14])
 
     def preprocess_frame(self, frame):
         try:
