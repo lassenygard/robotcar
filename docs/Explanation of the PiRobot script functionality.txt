@@ -1,8 +1,216 @@
-When you put the robot car on the floor in your flat and run "main_AIlearning.py", the following sequence of events will occur:
+###
+Hardware
+Dimensions and Weight of the complete robotcar (l*h*w in cm): 25/15/17, and apx. 1.5 kg.
+Raspberry Pi 4B 8GB RAM
+PiJuice HAT
+MotoZero HAT
+LiPo Battery:11.1 V, 60C, 5200mAh
+4 DC Motors that runs the mechanum wheels. 
+Motor specs: Rated Voltage:3~6V, Continuous No-Load Current:150mA +/- 10%, Min. Operating Speed (3V / 6V):90+/- 10% RPM / 200+/- 10% RPM, Torque:0.15Nm~0.60Nm, Stall Torque (6V):0.8kg.cm, Gear Ratio:1:48.
+Camera: 8MP IMX219 Chip, 160 degree, CMOS size:1/4in, Aperture (F):2.35, Focel length:3.15mm, Distortion:<14.3% 
+The camera points in the forward direction and can be rotated 60 degrees to left/right from initial position since it is mounted on a 28BYJ-48 stepper motor.
+#####
 
-The program will import necessary libraries and modules such as mecanum_wheels, PiCameraModule, RPLidarModule, and others.
+When you place the robot car on the floor in your flat and run "main.py", the following sequence of events will occur:
+
+The program will import necessary libraries (asyncio, configparser, websockets, time, numpy and keyboard) and modules (mecanum_wheels, camera_module, camera_rotation, lidar_module, localization, mapping, obstacle_detection, command_interface, pathfinding and q_learning_agent).
 It will load configurations from the "config.ini" file.
-Instances of different classes will be created, such as MecanumWheels, PiCameraModule, RPLidarModule, DeadReckoningLocalization, ObstacleDetector, Map, Pathfinder, CommandInterface, CameraRotation, and QLearningAgent.
+Instances of different classes will be created, such as MecanumWheels, PiCameraModule, CameraRotation, RPLidarModule, DeadReckoningLocalization, Map, ObstacleDetector, CommandInterface, Pathfinder and QLearningAgent.
+
+#####
+
+main.py
+
+Dette er hovedscriptet som styrer robotbilen. Her er en mer detaljert oversikt over funksjonene og klassene i dette scriptet:
+
+load_config(): Denne funksjonen laster inn konfigurasjonsfilen (config.ini) og returnerer innstillingene som en ordbok.
+update_map_periodically(map_instance, interval): Denne asynkrone funksjonen oppdaterer kartet periodisk basert på det gitte intervallet.
+explore(q_agent, mecanum_wheels, localization, is_exploration_complete): Denne asynkrone funksjonen styrer utforskningsprosessen av robotbilen. Den bruker Q-læringsagenten for å bestemme handlinger basert på robotbilens nåværende tilstand, utfører handlingene, oppdaterer Q-tabellen basert på belønningen, og stopper utforskningen når den er fullført.
+handle_command(websocket, path): Denne asynkrone funksjonen håndterer kommandoer mottatt via en WebSocket-tilkobling.
+
+I tillegg til disse funksjonene, initialiserer scriptet flere objekter for å styre forskjellige aspekter av robotbilen, inkludert:
+
+settings: Innstillinger lastet fra konfigurasjonsfilen.
+start_server: En WebSocket-server som lytter på port 8080 for innkommende kommandoer.
+mecanum_wheels: En instans av MecanumWheels-klassen for å styre robotbilens bevegelser.
+camera: En instans av PiCameraModule-klassen for å håndtere kameraoperasjoner.
+lidar: En instans av RPLidarModule-klassen for å håndtere LiDAR-sensoroperasjoner.
+localization: En instans av DeadReckoningLocalization-klassen for å håndtere lokalisering av robotbilen.
+obstacle_detector: En instans av ObstacleDetector-klassen for å håndtere hindringsdeteksjon.
+map_instance: En instans av Map-klassen for å håndtere kartlegging av omgivelsene.
+pathfinder: En instans av Pathfinder-klassen for å håndtere sti-finningsalgoritmer.
+command_interface: En instans av CommandInterface-klassen for å håndtere kommandoer sendt til robotbilen.
+q_agent: En instans av QLearningAgent-klassen for å håndtere Q-læringsalgoritmen.
+
+Dette scriptet bruker flere biblioteker, inkludert asyncio for asynkron programmering, websockets for WebSocket-kommunikasjon, og numpy for numeriske operasjoner.
+###
+
+camera_module.py
+
+Dette scriptet håndterer funksjonaliteten til kameraet på robotbilen. Her er en mer detaljert oversikt over funksjonene og klassene i dette scriptet:
+
+class PiCameraModule: Denne klassen initialiserer kameraet og setter opp strømming av video. Den har følgende metoder:
+__init__(self, resolution=(640, 480), framerate=30): Initialiserer kameraet med gitt oppløsning og bildefrekvens.
+capture_image(self, output_format="rgb", as_array=False): Tar et bilde med kameraet. Output kan være enten en RGB-bilde (som standard) eller et BGR-bilde. Bildet kan returneres enten som en numpy array (hvis as_array=True) eller som en byte stream.
+start_streaming(self): Starter videostrømming fra kameraet i en egen tråd.
+stop_streaming(self): Stopper videostrømming fra kameraet og avslutter strømmetråden.
+stream(self): Genererer en kontinuerlig videostrøm fra kameraet som kan brukes til live streaming.
+cleanup(self): Stopper strømming og frigjør kameraressurser.
+app.route('/video_feed'): Dette er en Flask-rute som returnerer videostrømmen fra kameraet. Den kan brukes til å vise live video fra kameraet i en nettleser.
+
+Dette scriptet bruker OpenCV for å håndtere kameraoperasjoner og Flask for å sette opp en webserver for videostrømming.
+###
+
+lidar_module.py
+
+Dette scriptet håndterer funksjonaliteten til LiDAR-sensoren på robotbilen. Her er en mer detaljert oversikt over funksjonene og klassene i dette scriptet:
+
+class RPLidarModule: Denne klassen initialiserer LiDAR-sensoren og henter skannede data. Den har følgende metoder:
+__init__(self): Initialiserer LiDAR-sensoren hvis den er tilgjengelig.
+is_lidar_available(self): Sjekker om LiDAR-sensoren er tilgjengelig.
+get_scan_data(self): Henter skannede data fra LiDAR-sensoren. Hvis sensoren ikke er tilgjengelig, returnerer den en tom liste.
+stop(self): Stopper LiDAR-sensoren.
+cleanup(self): Frigjør LiDAR-ressurser.
+
+Dette scriptet bruker rplidar-biblioteket for å håndtere LiDAR-operasjoner.
+###
+
+localization.py
+
+Dette scriptet håndterer lokalisering av robotbilen. Her er en mer detaljert oversikt over funksjonene og klassene i dette scriptet:
+
+class DeadReckoningLocalization: Denne klassen implementerer en enkel død-rekning lokalisering. Den har følgende metoder:
+__init__(self, initial_position, initial_orientation, wheel_radius, wheel_separation): Initialiserer lokaliseringen med den gitte startposisjonen, startorienteringen, hjulradiusen og hjulseparasjonen.
+update_odometry(self, wheel_speeds, dt): Oppdaterer odometrien basert på hjulhastighetene og tidsintervallet dt. Den beregner den lineære og vinkelhastigheten, oppdaterer orienteringen og posisjonen til roboten.
+get_current_position(self): Returnerer den nåværende posisjonen og orienteringen til roboten.
+reset_position(self, new_position=None): Tilbakestiller posisjonen og orienteringen til roboten. Hvis en ny posisjon er gitt, blir det den nye posisjonen og orienteringen til roboten.
+
+Dette scriptet bruker matematikk-biblioteket for å utføre beregningene.
+###
+
+camera_rotation.py
+
+Dette scriptet håndterer rotasjonen av kameraet. Her er en mer detaljert oversikt over funksjonene og klassene i dette scriptet:
+
+class CameraRotation: Denne klassen styrer rotasjonen av kameraet ved hjelp av en stepper motor. Den har følgende metoder:
+__init__(self, pins, initial_angle=0): Initialiserer stepper motoren med de gitte GPIO-pinnene og setter den opprinnelige vinkelen til kameraet.
+rotate(self, direction, steps): Roterer kameraet i den gitte retningen med det gitte antallet skritt. Retningen kan være 1 for venstre og -1 for høyre.
+rotate_left(self, angle): Roterer kameraet til venstre med den gitte vinkelen, hvis den totale vinkelen ikke overstiger 60 grader.
+rotate_right(self, angle): Roterer kameraet til høyre med den gitte vinkelen, hvis den totale vinkelen ikke er mindre enn -60 grader.
+angle_to_steps(self, angle): Konverterer en vinkel til et antall skritt for stepper motoren. Antall skritt per revolusjon er satt til 200, men dette kan endres basert på spesifikasjonene til din stepper motor.
+cleanup(self): Slår av stepper motoren og frigjør GPIO-pinnene.
+
+Dette scriptet bruker RPi.GPIO-biblioteket for å kontrollere stepper motoren. Det antar at stepper motoren er koblet til Raspberry Pi via fire GPIO-pinner, og at den bruker en 8-trinns sekvens for å rotere.
+###
+
+q_learning_agent.py
+
+Dette scriptet håndterer Q-læringsalgoritmen for robotbilen. Her er en mer detaljert oversikt over funksjonene og klassene i dette scriptet:
+
+class QLearningAgent: Denne klassen implementerer en Q-læringsagent som kan lære å ta optimale handlinger basert på belønninger og straffer. Den har følgende metoder:
+__init__(self, actions, learning_rate=0.1, discount_factor=0.9, exploration_rate=0.3): Initialiserer agenten med en liste over mulige handlinger, en læringsrate, en diskonteringsfaktor og en utforskningsrate.
+get_action(self, state): Velger en handling for den gitte tilstanden. Med en sannsynlighet lik utforskningsraten, velger den en tilfeldig handling. Ellers velger den den handlingen som har den høyeste forventede belønningen ifølge Q-tabellen.
+get_best_action(self, state): Returnerer handlingen med den høyeste forventede belønningen for den gitte tilstanden ifølge Q-tabellen.
+update(self, state, action, reward, next_state): Oppdaterer Q-tabellen basert på den observerte belønningen for å ta den gitte handlingen i den gitte tilstanden og overgangen til den neste tilstanden.
+###
+
+pathfinding.py
+
+Dette scriptet håndterer sti-finningsalgoritmer. Her er en mer detaljert oversikt over funksjonene og klassene i dette scriptet:
+
+class PathFinder: Denne klassen implementerer en sti-finningsalgoritme basert på A* algoritmen. Den har følgende metoder:
+__init__(self, map_instance): Initialiserer sti-finneren med en instans av et kart.
+find_path(self, start, goal): Finner en sti fra start til mål ved hjelp av A* algoritmen. Returnerer en liste over punkter som representerer stien.
+get_smoothed_path(self, raw_path): Glatter ut en rå sti ved hjelp av kubisk spline-interpolasjon. Returnerer en liste over punkter som representerer den glattede stien.
+visualize_path(self, path): Visualiserer en sti på kartet ved hjelp av matplotlib.
+###
+
+obstacle_detection.py
+
+Dette scriptet håndterer deteksjon av hindringer for robotbilen. Her er en mer detaljert oversikt over funksjonene og klassene i dette scriptet:
+
+class ObstacleDetector: Denne klassen håndterer deteksjon av hindringer ved hjelp av kamera- og LiDAR-modulene. Den har følgende metoder:
+__init__(self, camera_module, lidar_module=None, camera_settings=None, detection_thresholds=None): Initialiserer hindringsdetektoren med gitt kamera- og LiDAR-moduler, kamera-innstillinger og deteksjonsterskler.
+preprocess_frame(self, frame): Preprosesserer et bilde fra kameraet for hindringsdeteksjon. Dette kan inkludere trinn som å endre størrelse på bildet eller konvertere det til gråskala.
+detect_obstacles(self, frame): Detekterer hindringer i et bilde ved hjelp av kantdeteksjon og konturekstraksjon.
+localize_obstacles(self, obstacles): Lokaliserer hindringer i robotens koordinatsystem ved å konvertere deres posisjoner og størrelser fra bildeområdet.
+process_lidar_data(self, scan_data): Behandler data fra LiDAR-skanningen for å detektere hindringer.
+get_obstacle_data(self): Får data om hindringer ved å kombinere data fra kamera- og LiDAR-modulene.
+get_obstacle_data_from_camera(self): Får data om hindringer fra kameraet alene.
+
+Dette scriptet bruker OpenCV for bildebehandling og hindringsdeteksjon. Det kan også bruke en LiDAR-modul for å detektere hindringer basert på avstandsmålinger.
+###
+
+mapping.py
+
+Dette scriptet håndterer kartlegging av omgivelsene. Her er en mer detaljert oversikt over funksjonene og klassene i dette scriptet:
+
+class Map: Denne klassen initialiserer og oppdaterer et kart over omgivelsene basert på sensoravlesninger. Den har følgende metoder:
+__init__(self, width, height): Initialiserer kartet med gitt bredde og høyde.
+update_map(self, combined_obstacle_data, robot_position): Oppdaterer kartet basert på de kombinerte hindringsdataene og robotens posisjon. Hindringer markeres som okkuperte celler i kartet, mens robotens posisjon markeres med en egen verdi.
+visualize_map(self): Visualiserer kartet ved hjelp av matplotlib.
+save_map(self, file_path="map_image.png"): Lagrer kartet som et bilde i en fil.
+schedule_map_update(self, interval, obstacle_detector, localization): Planlegger regelmessige kartoppdateringer basert på et gitt intervall, en hindringsdetektor og en lokalisering.
+get_path_image(self, path): Genererer et bilde av en sti i kartet.
+###
+
+mecanum_wheels.py
+
+Dette scriptet håndterer styringen av Mecanum-hjulene på robotbilen. Her er en mer detaljert oversikt over funksjonene og klassene i dette scriptet:
+
+class MecanumWheels: Denne klassen styrer Mecanum-hjulene på robotbilen. Den har følgende metoder:
+__init__(self): Initialiserer motorene for Mecanum-hjulene.
+set_speed(self, speed): Setter hastigheten for Mecanum-hjulene.
+forward(self): Beveger robotbilen fremover.
+backward(self): Beveger robotbilen bakover.
+strafe_left(self): Beveger robotbilen til venstre uten å rotere.
+strafe_right(self): Beveger robotbilen til høyre uten å rotere.
+rotate_cw(self): Roterer robotbilen med klokken.
+rotate_ccw(self): Roterer robotbilen mot klokken.
+stop(self): Stopper robotbilen.
+cleanup(self): Rydder opp ressursene som brukes av motorene.
+
+Dette scriptet bruker gpiozero-biblioteket for å kontrollere motorene som driver Mecanum-hjulene.
+###
+
+command_interface.py
+
+command_interface.py er et Python-skript som fungerer som et grensesnitt for å sende kommandoer til robotbilen. Dette skriptet er ansvarlig for å sende kommandoer til robotbilen, som for eksempel å kjøre fremover, bakover, svinge til venstre eller høyre, og stoppe.
+
+Hovedfunksjonene i dette skriptet er:
+
+send_command(): Denne funksjonen tar en kommando som argument og sender den til robotbilen. Kommandoen kan være en av følgende: 'forward', 'backward', 'left', 'right', 'stop'.
+main(): Dette er hovedfunksjonen i skriptet. Den starter en løkke som venter på brukerinput for å sende kommandoer til robotbilen.
+db_logging.py
+db_logging.py er et Python-skript som håndterer logging av data til en database. Dette skriptet inneholder funksjoner for å opprette forbindelse til databasen, generere unike IDer for kartdata, logge kartdata, logge sti-data, og logge feilmeldinger.
+
+Hovedfunksjonene i dette skriptet er:
+
+load_db_config(): Denne funksjonen laster inn konfigurasjonsdata for databasen fra en JSON-fil.
+create_connection(): Denne funksjonen oppretter en forbindelse til databasen ved hjelp av konfigurasjonsdataene.
+generate_map_id(): Denne funksjonen genererer en unik ID for et kart ved hjelp av MD5 hashing.
+log_map(): Denne funksjonen logger kartdata til databasen.
+log_path(): Denne funksjonen logger sti-data til databasen.
+log_error(): Denne funksjonen logger feilmeldinger til databasen.
+
+###
+
+save_imgs.py
+
+save_imgs.py er et Python-skript som håndterer lagring av bilder. Dette skriptet inneholder funksjoner for å lagre kartdata og sti-data som bilder.
+
+Hovedfunksjonene i dette skriptet er:
+
+save_map_data(): Denne funksjonen lagrer kartdata som et bilde. Den tar et kart-objekt og en sti som argumenter, og lagrer kartet som et bilde på den angitte stien.
+save_path_data(): Denne funksjonen lagrer sti-data som et bilde. Den tar en sti og et kart-objekt som argumenter, og lagrer stien som et bilde på det angitte kartet.
+###
+
+
+
+#####
+
+
+Gammelt:
 The WebSocket server will be started to handle incoming commands.
 The main event loop will run several asynchronous tasks concurrently:
 The robot will explore the environment using the Q-learning algorithm. It will choose actions based on the current state and perform them using the MecanumWheels instance. After each action, the Q-table will be updated with the new state and reward.
@@ -14,15 +222,15 @@ The robot will use a Q-learning algorithm to learn the environment and navigate 
 
 Additionally, the robot will have a command interface to handle incoming commands over WebSocket connections. This allows external control over the robot.
 
-In summary, when you run "main_AIlearning.py" after placing the robot car on the floor, it will start exploring the environment, detect obstacles, and update its internal map. It will also listen for commands sent over WebSocket connections for additional control.
+In summary, when you run "main.py" after placing the robot car on the floor, it will start exploring the environment, detect obstacles, and update its internal map. It will also listen for commands sent over WebSocket connections for additional control.
 
 localization.py:
 This script defines the DeadReckoningLocalization class. The class initializes with the robot's initial position, initial orientation, wheel radius, and wheel separation. It has methods to update odometry, get the current position, and reset the position of the robot. The update_odometry method calculates the robot's linear and angular velocities, updates its orientation and position using the calculated velocities, and handles any errors that might occur during this process.
 
-pathfinding_new.py:
+pathfinding.py:
 This script defines the Pathfinder class, which is responsible for finding paths between two points on a given map. The class initializes with a map_instance and provides methods for finding a path, smoothing a path using cubic splines, and visualizing the path on a map. The find_path method implements the A* search algorithm for pathfinding, taking into account the cost of moving between nodes and a heuristic for estimating the remaining distance to the goal.
 
-mapping_new.py:
+mapping.py:
 This script defines the Map class, which is responsible for creating and updating a map of the environment. The class initializes with the width and height of the map and provides methods for updating the map with obstacle data and the robot's position, visualizing the map, saving the map as an image, scheduling periodic map updates, and generating a path image.
 
 save_imgs.py:
