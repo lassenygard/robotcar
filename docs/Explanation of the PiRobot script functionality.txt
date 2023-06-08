@@ -1,0 +1,32 @@
+When you put the robot car on the floor in your flat and run "main_AIlearning.py", the following sequence of events will occur:
+
+The program will import necessary libraries and modules such as mecanum_wheels, PiCameraModule, RPLidarModule, and others.
+It will load configurations from the "config.ini" file.
+Instances of different classes will be created, such as MecanumWheels, PiCameraModule, RPLidarModule, DeadReckoningLocalization, ObstacleDetector, Map, Pathfinder, CommandInterface, CameraRotation, and QLearningAgent.
+The WebSocket server will be started to handle incoming commands.
+The main event loop will run several asynchronous tasks concurrently:
+The robot will explore the environment using the Q-learning algorithm. It will choose actions based on the current state and perform them using the MecanumWheels instance. After each action, the Q-table will be updated with the new state and reward.
+The map will be updated periodically with new obstacle data and the current position of the robot.
+The WebSocket server will listen for incoming commands and respond accordingly.
+When the robot explores the environment, the obstacle detection system will use the PiCameraModule and RPLidarModule to detect obstacles. The camera module will capture images and preprocess them, while the LiDAR module will provide scan data. The obstacle detection system will then process this data to detect and localize obstacles in the environment.
+
+The robot will use a Q-learning algorithm to learn the environment and navigate through it. The actions it can take are moving forward, turning left, turning right, and moving backward. As it navigates, it will update the Q-table based on the rewards it receives for each action.
+
+Additionally, the robot will have a command interface to handle incoming commands over WebSocket connections. This allows external control over the robot.
+
+In summary, when you run "main_AIlearning.py" after placing the robot car on the floor, it will start exploring the environment, detect obstacles, and update its internal map. It will also listen for commands sent over WebSocket connections for additional control.
+
+localization.py:
+This script defines the DeadReckoningLocalization class. The class initializes with the robot's initial position, initial orientation, wheel radius, and wheel separation. It has methods to update odometry, get the current position, and reset the position of the robot. The update_odometry method calculates the robot's linear and angular velocities, updates its orientation and position using the calculated velocities, and handles any errors that might occur during this process.
+
+pathfinding_new.py:
+This script defines the Pathfinder class, which is responsible for finding paths between two points on a given map. The class initializes with a map_instance and provides methods for finding a path, smoothing a path using cubic splines, and visualizing the path on a map. The find_path method implements the A* search algorithm for pathfinding, taking into account the cost of moving between nodes and a heuristic for estimating the remaining distance to the goal.
+
+mapping_new.py:
+This script defines the Map class, which is responsible for creating and updating a map of the environment. The class initializes with the width and height of the map and provides methods for updating the map with obstacle data and the robot's position, visualizing the map, saving the map as an image, scheduling periodic map updates, and generating a path image.
+
+save_imgs.py:
+This script provides two utility functions for saving map data and path data. The save_map_data function saves the map as an image and stores the associated metadata, such as the timestamp, map ID, and map name. The save_path_data function saves the path data, including the associated map ID, map name, and path, and also saves the path as an image.
+
+db_logging.py:
+This script provides functions for logging data to a MariaDB database. It includes methods for connecting and disconnecting from the database, loading the database configuration, generating map IDs, and logging map data, path data, error messages, and console messages. The log_map, log_path, log_error, and log_console functions each insert their respective data types into the database, handling any errors that may occur during the process.
