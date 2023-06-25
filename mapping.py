@@ -19,8 +19,8 @@ class Map:
     def update_map(self, combined_obstacle_data, robot_position):
         with self.lock:
             try:
-#               print(f"combined_obstacle_data: {combined_obstacle_data}")
-#               print(f"type(combined_obstacle_data): {type(combined_obstacle_data)}")
+                print(f"combined_obstacle_data: {combined_obstacle_data}")
+                print(f"type(combined_obstacle_data): {type(combined_obstacle_data)}")
 
                 for contour in combined_obstacle_data:
                     try:

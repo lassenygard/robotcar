@@ -1,16 +1,17 @@
 # lidar_module.py
 
-from rplidar import RPLidar
+from math import floor
+from adafruit_rplidar import RPLidar
 
 class RPLidarModule:
     def __init__(self):
         self.lidar = None
+        self.scan_data = [0] * 360
+        self.PORT_NAME = "/dev/ttyUSB0"
 
         try:
             if self.is_lidar_available():
-                self.lidar = RPLidar('/dev/ttyUSB0')
-                self.lidar.set_pwm(660)  # Set the motor speed
-                self.lidar.connect()  # Connect to the RPLidar device
+                self.lidar = RPLidar(None, self.PORT_NAME, timeout=3)
                 print("RPLidar successfully initialized.")
             else:
                 print("RPLidar not available.")
@@ -19,16 +20,17 @@ class RPLidarModule:
 
     def is_lidar_available(self):
         import os
-
-        return os.path.exists('/dev/ttyUSB0')
+        return os.path.exists(self.PORT_NAME)
 
     def get_scan_data(self):
         if self.lidar is None:
             return []
 
         try:
-            for scan in self.lidar.iter_scans(max_buf_meas=500):
-                return scan
+            for scan in self.lidar.iter_scans():
+                for _, angle, distance in scan:
+                    self.scan_data[min([359, floor(angle)])] = distance
+                return self.scan_data
         except Exception as e:
             print(f"Error getting scan data: {e}")
             return []
@@ -38,8 +40,7 @@ class RPLidarModule:
             return
 
         try:
-            self.lidar.stop()  # Stop the RPLidar device
-            self.lidar.stop_motor()  # Stop the RPLidar motor
+            self.lidar.stop()
             print("RPLidar successfully stopped.")
         except Exception as e:
             print(f"Error stopping RPLidar: {e}")
@@ -49,7 +50,7 @@ class RPLidarModule:
             return
 
         try:
-            self.lidar.disconnect()  # Disconnect from the RPLidar device
+            self.lidar.disconnect()
             print("RPLidar successfully disconnected.")
         except Exception as e:
             print(f"Error cleaning up RPLidar resources: {e}")
