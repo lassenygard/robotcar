@@ -122,7 +122,7 @@ async def explore(q_agent, mecanum_wheels, localization, is_exploration_complete
         await asyncio.sleep(1)  # Assuming each action takes 1 second
 
         # Compute the reward
-        new_position = tuple(localization.get_current_position()[0])
+        new_position = [list(localization.get_current_position()[0])]
         state, _ = state
         
         print("new_position:", new_position)
@@ -160,7 +160,7 @@ camera = PiCameraModule()
 lidar = RPLidarModule()
 localization = DeadReckoningLocalization((0, 0), 0, wheel_radius, wheel_separation)
 obstacle_detector = ObstacleDetector(camera_module=camera, lidar_module=lidar)
-map_instance = Map(width=10, height=10)
+map_instance = Map(width=100, height=100)
 map_instance.schedule_map_update(map_update_interval, obstacle_detector, localization)
 
 pathfinder = Pathfinder(map_instance)

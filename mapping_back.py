@@ -81,9 +81,3 @@ class Map:
             path_points = np.array(path, dtype=np.int_)
             path_image[path_points[:, 1], path_points[:, 0]] = 128
             return path_image
-
-    def get_explored_area(self):
-        return np.count_nonzero(self.grid)
-
-    def get_total_area(self):
-        return self.grid.size
