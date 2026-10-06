@@ -23,13 +23,13 @@ class MecanumWheels:
     Controller for Mecanum wheels.
     Støtter omnidirectional bevegelse: frem, bak, sidelengs, rotasjon.
     """
-    
+
     def __init__(self):
         self.speed = DEFAULT_SPEED
         self.current_movement = "stopped"
         self.motors = None
         self.last_command_time = time.time()
-        
+
         if GPIO_AVAILABLE:
             try:
                 self.motors = {
@@ -59,12 +59,12 @@ class MecanumWheels:
         Positive = forward, Negative = backward, 0 = stop
         """
         self.last_command_time = time.time()
-        
+
         if self.motors:
             for motor_name, speed in motor_speeds.items():
                 motor = self.motors[motor_name]
                 actual_speed = abs(speed) * self.speed
-                
+
                 if speed > 0:
                     motor.forward(actual_speed)
                 elif speed < 0:
@@ -209,30 +209,30 @@ class MecanumWheels:
 if __name__ == "__main__":
     print("Testing MecanumWheels...")
     wheels = MecanumWheels()
-    
+
     try:
         print("\nTest: Forward")
         wheels.move_forward()
         time.sleep(1)
-        
+
         print("\nTest: Stop")
         wheels.stop()
         time.sleep(0.5)
-        
+
         print("\nTest: Strafe Left")
         wheels.strafe_left()
         time.sleep(1)
-        
+
         print("\nTest: Stop")
         wheels.stop()
         time.sleep(0.5)
-        
+
         print("\nTest: Rotate CW")
         wheels.rotate_clockwise()
         time.sleep(1)
-        
+
         print("\nStatus:", wheels.get_status())
-        
+
     finally:
         wheels.cleanup()
         print("\nTest complete!")

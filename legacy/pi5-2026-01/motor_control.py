@@ -20,12 +20,12 @@ REAR_RIGHT = (18, 13, 25)
 
 class MecanumWheels:
     """Mecanum wheels controller with support for both real GPIO and simulation."""
-    
+
     def __init__(self):
         self.speed = 0.5
         self.current_movement = "stopped"
         self.motors = None
-        
+
         if ON_RASPBERRY_PI:
             try:
                 self.motors = {
@@ -123,7 +123,7 @@ class MecanumWheels:
         self.set_speed(speed)
         self.rotate_clockwise()
         print(f"Turning right at speed: {speed}")
-        
+
     def stop(self) -> None:
         self.current_movement = "stopped"
         if self.motors:

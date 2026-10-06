@@ -5,22 +5,22 @@
     --bg-secondary: #12121a;
     --bg-panel: #1a1a24;
     --bg-elevated: #22222e;
-    
+
     --accent-primary: #00ff88;
     --accent-secondary: #00ccff;
     --accent-warning: #ffaa00;
     --accent-danger: #ff3366;
-    
+
     --text-primary: #e0e0e0;
     --text-secondary: #888899;
     --text-muted: #555566;
-    
+
     --border-color: #2a2a3a;
     --border-glow: rgba(0, 255, 136, 0.3);
-    
+
     --font-display: 'Orbitron', monospace;
     --font-mono: 'JetBrains Mono', monospace;
-    
+
     --transition-fast: 0.15s ease;
     --transition-normal: 0.3s ease;
 }
@@ -779,17 +779,17 @@ body::before {
     .dashboard {
         padding: 0.5rem;
     }
-    
+
     .header {
         flex-direction: column;
         gap: 1rem;
     }
-    
+
     .control-btn {
         width: 60px;
         height: 60px;
     }
-    
+
     .spacer {
         width: 60px;
         height: 60px;

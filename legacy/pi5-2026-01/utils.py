@@ -17,30 +17,30 @@ class HailoAsyncInference:
         input_type: Optional[str] = None, output_type: Optional[Dict[str, str]] = None,
         send_original_frame: bool = False) -> None:
         """
-        Initialize the HailoAsyncInference class with the provided HEF model 
+        Initialize the HailoAsyncInference class with the provided HEF model
         file path and input/output queues.
 
         Args:
             hef_path (str): Path to the HEF model file.
-            input_queue (queue.Queue): Queue from which to pull input frames 
+            input_queue (queue.Queue): Queue from which to pull input frames
                                        for inference.
             output_queue (queue.Queue): Queue to hold the inference results.
             batch_size (int): Batch size for inference. Defaults to 1.
-            input_type (Optional[str]): Format type of the input stream. 
+            input_type (Optional[str]): Format type of the input stream.
                                         Possible values: 'UINT8', 'UINT16'.
-            output_type Optional[dict[str, str]] : Format type of the output stream. 
+            output_type Optional[dict[str, str]] : Format type of the output stream.
                                          Possible values: 'UINT8', 'UINT16', 'FLOAT32'.
         """
         self.input_queue = input_queue
         self.output_queue = output_queue
-        params = VDevice.create_params()    
+        params = VDevice.create_params()
         # Set the scheduling algorithm to round-robin to activate the scheduler
         params.scheduling_algorithm = HailoSchedulingAlgorithm.ROUND_ROBIN
 
         self.hef = HEF(hef_path)
         self.target = VDevice(params)
         self.infer_model = self.target.create_infer_model(hef_path)
-        self.infer_model.set_batch_size(batch_size)      
+        self.infer_model.set_batch_size(batch_size)
         if input_type is not None:
             self._set_input_type(input_type)
         if output_type is not None:
@@ -58,7 +58,7 @@ class HailoAsyncInference:
             input_type (Optional[str]): Format type of the input stream.
         """
         self.infer_model.input().set_format_type(getattr(FormatType, input_type))
-    
+
     def _set_output_type(self, output_type_dict: Optional[Dict[str, str]] = None) -> None:
         """
         Set the output type for the HEF model. If the model has multiple outputs,
@@ -79,9 +79,9 @@ class HailoAsyncInference:
         Callback function for handling inference results.
 
         Args:
-            completion_info: Information about the completion of the 
+            completion_info: Information about the completion of the
                              inference task.
-            bindings_list (list): List of binding objects containing input 
+            bindings_list (list): List of binding objects containing input
                                   and output buffers.
             processed_batch (list): The processed batch of images.
         """
@@ -89,7 +89,7 @@ class HailoAsyncInference:
             logger.error(f'Inference error: {completion_info.exception}')
         else:
             for i, bindings in enumerate(bindings_list):
-                # If the model has a single output, return the output buffer. 
+                # If the model has a single output, return the output buffer.
                 # Else, return a dictionary of output buffers, where the keys are the output names.
                 if len(bindings._output_names) == 1:
                     result = bindings.output().get_buffer()
@@ -108,18 +108,18 @@ class HailoAsyncInference:
         Get information about input and output stream layers.
 
         Returns:
-            Tuple[list, list]: List of input stream layer information, List of 
+            Tuple[list, list]: List of input stream layer information, List of
                                output stream layer information.
         """
         return (
-            self.hef.get_input_vstream_infos(), 
+            self.hef.get_input_vstream_infos(),
             self.hef.get_output_vstream_infos()
         )
 
     def get_hef(self) -> HEF:
         """
         Get the object's HEF file
-        
+
         Returns:
             HEF: A HEF (Hailo Executable File) containing the model.
         """
@@ -191,7 +191,7 @@ class HailoAsyncInference:
         else:
             output_buffers = {
                 name: np.empty(
-                    self.infer_model.output(name).shape, 
+                    self.infer_model.output(name).shape,
                     dtype=(getattr(np, self.output_type[name].lower()))
                 )
             for name in self.output_type
@@ -228,7 +228,7 @@ def load_input_images(images_path: str) -> List[Image.Image]:
         return [Image.open(path)]
     elif path.is_dir():
         return [
-            Image.open(img) for img in path.glob("*") 
+            Image.open(img) for img in path.glob("*")
             if img.suffix.lower() in IMAGE_EXTENSIONS
         ]
     return []
@@ -249,7 +249,7 @@ def validate_images(images: List[Image.Image], batch_size: int) -> None:
         raise ValueError(
             'No valid images found in the specified path.'
         )
-    
+
     if len(images) % batch_size != 0:
         raise ValueError(
             'The number of input images should be divisible by the batch size '
@@ -268,7 +268,7 @@ def divide_list_to_batches(
         batch_size (int): Number of images in each batch.
 
     Returns:
-        Generator[List[Image.Image], None, None]: Generator yielding batches 
+        Generator[List[Image.Image], None, None]: Generator yielding batches
                                                   of images.
     """
     for i in range(0, len(images_list), batch_size):

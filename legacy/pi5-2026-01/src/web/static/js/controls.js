@@ -88,11 +88,11 @@ document.addEventListener('DOMContentLoaded', function () {
         const entry = document.createElement('div');
         entry.className = `log-entry ${type}`;
         entry.textContent = `[${timestamp}] ${message}`;
-        
+
         if (elements.consoleOutput) {
             elements.consoleOutput.appendChild(entry);
             elements.consoleOutput.scrollTop = elements.consoleOutput.scrollHeight;
-            
+
             while (elements.consoleOutput.children.length > 100) {
                 elements.consoleOutput.removeChild(elements.consoleOutput.firstChild);
             }
@@ -105,7 +105,7 @@ document.addEventListener('DOMContentLoaded', function () {
         if (elements.connectionStatus) {
             const dot = elements.connectionStatus.querySelector('.dot');
             const label = elements.connectionStatus.querySelector('.label');
-            
+
             dot.classList.toggle('connected', connected);
             label.textContent = connected ? 'SERVER ✓' : 'SERVER ✗';
         }
@@ -113,15 +113,15 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function updateMotorStatus(connected) {
         motorConnected = connected;
-        
+
         if (elements.motorStatus) {
             const dot = elements.motorStatus.querySelector('.dot');
             const label = elements.motorStatus.querySelector('.label');
-            
+
             dot.classList.toggle('connected', connected);
             label.textContent = connected ? 'RPi3 ✓' : 'RPi3 ✗';
         }
-        
+
         // Disable controls if motors not connected
         if (!connected && !isAutoMode) {
             Object.keys(buttonCommands).forEach(buttonId => {
@@ -137,7 +137,7 @@ document.addEventListener('DOMContentLoaded', function () {
         if (elements.modeIndicator) {
             const dot = elements.modeIndicator.querySelector('.dot');
             const label = elements.modeIndicator.querySelector('.label');
-            
+
             dot.classList.remove('manual', 'auto');
             dot.classList.add(isAutoMode ? 'auto' : 'manual');
             label.textContent = isAutoMode ? 'AUTO' : 'MANUAL';
@@ -145,7 +145,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         if (elements.toggleMode) {
             elements.toggleMode.classList.toggle('active', isAutoMode);
-            elements.toggleMode.querySelector('.mode-text').textContent = 
+            elements.toggleMode.querySelector('.mode-text').textContent =
                 isAutoMode ? 'MANUAL MODE' : 'AUTO MODE';
         }
 
@@ -175,7 +175,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function updatePosition(position) {
         robotPosition = position;
-        
+
         if (elements.posX) elements.posX.textContent = position.x.toFixed(2);
         if (elements.posY) elements.posY.textContent = position.y.toFixed(2);
         if (elements.posTheta) {
@@ -194,17 +194,17 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function switchCamera(camera) {
         currentCamera = camera;
-        
+
         // Update video feed URL
         if (elements.videoFeed) {
             elements.videoFeed.src = `/video_feed/${camera}?t=${Date.now()}`;
         }
-        
+
         // Update label
         if (elements.cameraLabel) {
             elements.cameraLabel.textContent = camera.toUpperCase() + ' CAM';
         }
-        
+
         // Update button states
         if (elements.camFront) {
             elements.camFront.classList.toggle('active', camera === 'front');
@@ -212,7 +212,7 @@ document.addEventListener('DOMContentLoaded', function () {
         if (elements.camRear) {
             elements.camRear.classList.toggle('active', camera === 'rear');
         }
-        
+
         socket.emit('switch_camera', camera);
     }
 
@@ -230,7 +230,7 @@ document.addEventListener('DOMContentLoaded', function () {
         // Draw grid
         ctx.strokeStyle = '#2a2a3a';
         ctx.lineWidth = 1;
-        
+
         for (let r = 50; r <= 200; r += 50) {
             ctx.beginPath();
             ctx.arc(centerX, centerY, r, 0, Math.PI * 2);
@@ -247,15 +247,15 @@ document.addEventListener('DOMContentLoaded', function () {
         // Draw lidar points
         const safeDistance = parseInt(elements.safeDistance?.value || 500);
         const offset = parseInt(elements.lidarOffset?.value || -105);
-        
+
         lidarData.forEach(point => {
             const adjustedAngle = ((point.angle + offset) % 360) * Math.PI / 180;
             const distance = point.distance;
-            
+
             const scale = 200 / maxRange;
             const x = centerX + Math.cos(adjustedAngle) * distance * scale;
             const y = centerY - Math.sin(adjustedAngle) * distance * scale;
-            
+
             if (distance < safeDistance) {
                 ctx.fillStyle = '#ff3366';
             } else if (distance < safeDistance * 2) {
@@ -263,7 +263,7 @@ document.addEventListener('DOMContentLoaded', function () {
             } else {
                 ctx.fillStyle = '#00ff88';
             }
-            
+
             ctx.beginPath();
             ctx.arc(x, y, 3, 0, Math.PI * 2);
             ctx.fill();
@@ -309,17 +309,17 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function setNavMode(mode) {
         currentNavMode = mode;
-        
+
         document.querySelectorAll('.nav-mode-btn').forEach(btn => {
             btn.classList.toggle('active', btn.dataset.mode === mode);
         });
-        
-        socket.emit('nav_mode', { 
+
+        socket.emit('nav_mode', {
             mode,
             safe_distance: parseInt(elements.safeDistance?.value || 500),
             lidar_offset: parseInt(elements.lidarOffset?.value || -105)
         });
-        
+
         log(`Navigation mode: ${mode}`, 'success');
     }
 
@@ -414,7 +414,7 @@ document.addEventListener('DOMContentLoaded', function () {
             socket.emit('mode', isAutoMode ? 'auto' : 'manual');
             updateModeUI();
             log(`Mode switched to: ${isAutoMode ? 'AUTO' : 'MANUAL'}`, 'success');
-            
+
             if (!isAutoMode) {
                 sendCommand('stop');
             }
@@ -522,11 +522,11 @@ document.addEventListener('DOMContentLoaded', function () {
 
     socket.on('motor_status', (status) => {
         updateMotorStatus(status.connected);
-        
+
         // Only log when connection state CHANGES
         if (status.is_remote && status.connected !== lastMotorConnectedState) {
             lastMotorConnectedState = status.connected;
-            log(`Motors: RPi3 ${status.connected ? 'connected' : 'disconnected'}`, 
+            log(`Motors: RPi3 ${status.connected ? 'connected' : 'disconnected'}`,
                 status.connected ? 'success' : 'warning');
         }
     });

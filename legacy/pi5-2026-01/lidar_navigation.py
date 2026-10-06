@@ -44,7 +44,7 @@ def check_obstacles(scan_data, safe_distance=500, offset=-105):
         adjusted_angle = adjust_angle(angle, offset)  # Adjust the angle only for checks
         # Debug: Print raw and adjusted angles
         print(f"Raw angle: {angle:.2f}, Adjusted angle: {adjusted_angle:.2f}, Distance: {distance:.2f} mm")
-        
+
         # Check if the obstacle is in the forward range
         if -30 <= adjusted_angle <= 30 and distance < safe_distance:
             print(f"Obstacle detected at adjusted angle {adjusted_angle:.2f}, distance {distance:.2f} mm.")

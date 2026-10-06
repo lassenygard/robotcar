@@ -8,11 +8,11 @@ PORT_NAME = '/dev/ttyUSB0'  # Update this with your port
 def get_lidar_data(lidar, offset=-96):
     """
     Fetches and processes lidar data with an optional angle offset.
-    
+
     Args:
     - lidar: RPLidar object
     - offset: Angle offset in degrees (default: -96 to align forward direction)
-    
+
     Returns:
     - Processed scan data
     """

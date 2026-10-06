@@ -26,25 +26,25 @@ except ImportError:
 
 class RobotSystem:
     """Main robot system controller for RPi5."""
-    
+
     def __init__(self):
         print("\n" + "="*60)
         print("   🤖 INITIALIZING ROBOT SYSTEM (RPi5 Master)")
         print("="*60 + "\n")
-        
+
         # Initialize components
         print("Initializing motor controller...")
         self.motor_controller = MotorControlManager()
-        
+
         print("Initializing object detector...")
         self.object_detector = ObjectDetector()
-        
+
         print("Initializing web server...")
         self.web_server = WebServer(self)
-        
+
         # Setup signal handlers
         self._setup_signal_handlers()
-        
+
         print("\n✓ Robot system initialized\n")
 
     def _setup_signal_handlers(self):
@@ -66,13 +66,13 @@ class RobotSystem:
         print("\n" + "="*60)
         print("   SHUTTING DOWN ROBOT SYSTEM")
         print("="*60 + "\n")
-        
+
         print("Stopping web server...")
         self.web_server.stop()
-        
+
         print("Cleaning up motor controller...")
         self.motor_controller.cleanup()
-        
+
         print("\n✓ Robot system stopped\n")
         sys.exit(0)
 
@@ -88,7 +88,7 @@ def main():
     print("   Motor commands will be sent to RPi3 over WiFi")
     print("\n   Make sure RPi3 motor_service.py is running!")
     print("="*60 + "\n")
-    
+
     # Check for config
     try:
         from config import RPI3_HOST, RPI3_PORT
@@ -96,9 +96,9 @@ def main():
     except ImportError:
         print("   ⚠ No config.py found - using defaults")
         print("   Create config.py with RPI3_HOST to set RPi3 address")
-    
+
     print("\n")
-    
+
     # Start system
     robot_system = RobotSystem()
     robot_system.start()

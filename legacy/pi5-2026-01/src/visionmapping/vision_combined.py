@@ -44,7 +44,7 @@ except ImportError:
 # ObjectDetector Class
 class ObjectDetector:
     """Object detector that tracks unique detected objects."""
-    
+
     def __init__(self):
         self.detected_objects = set()
 
@@ -134,7 +134,7 @@ def start_detection(
 ):
     """
     Run the detection process.
-    
+
     Uses frames from global_frame (populated by the camera manager) instead of
     opening its own camera. This avoids camera conflicts.
     """
@@ -142,30 +142,30 @@ def start_detection(
     hef_path = hef_path or HEF_PATH
     labels_path = labels_path or LABELS_PATH
     score_thresh = score_thresh or DETECTION_THRESHOLD
-    
+
     # Check if required components are available
     if not HAILO_AVAILABLE:
         print("⚠ Hailo not available - AI detection disabled")
         return
-        
+
     if not SUPERVISION_AVAILABLE:
         print("⚠ Supervision not available - AI detection disabled")
         return
-    
+
     # Check if HEF file exists
     if not os.path.exists(hef_path):
         print(f"⚠ HEF file not found: {hef_path}")
         print("  AI detection disabled - copy yolov5m_wo_spp_60p.hef to project root")
         return
-        
+
     # Check if labels file exists
     if not os.path.exists(labels_path):
         print(f"⚠ Labels file not found: {labels_path}")
         print("  AI detection disabled - copy coco.txt to project root")
         return
-    
+
     print(f"Loading Hailo model from: {hef_path}")
-    
+
     retries = 3
     input_queue = queue.Queue()
     output_queue = queue.Queue()
@@ -184,7 +184,7 @@ def start_detection(
             retries -= 1
             print(f"Hailo initialization failed. Retries left: {retries}. Error: {e}")
             time.sleep(2)
-    
+
     if hailo_inference is None:
         print("⚠ Failed to initialize Hailo after retries - AI detection disabled")
         return
@@ -204,7 +204,7 @@ def start_detection(
     try:
         print("✓ AI detection process started (using shared camera frames)")
         detected_objects = object_detector.detected_objects
-        
+
         # Wait for first frame from camera manager
         print("  Waiting for camera frames...")
         wait_count = 0
@@ -214,13 +214,13 @@ def start_detection(
                     break
             time.sleep(0.1)
             wait_count += 1
-        
+
         if global_frame[0] is None:
             print("⚠ No camera frames available - AI detection stopping")
             return
-            
+
         print("  Camera frames available, starting detection loop")
-        
+
         while True:
             # Get frame from shared global_frame (populated by camera manager)
             with frame_lock:
@@ -228,10 +228,10 @@ def start_detection(
                     time.sleep(0.1)
                     continue
                 frame = global_frame[0].copy()
-            
+
             # Get frame dimensions
             h, w = frame.shape[:2]
-            
+
             # Preprocess and run inference
             preprocessed_frame = preprocess_frame(frame, model_h, model_w)
             input_queue.put([preprocessed_frame])
@@ -240,7 +240,7 @@ def start_detection(
                 _, results = output_queue.get(timeout=1.0)
             except queue.Empty:
                 continue
-                
+
             if len(results) == 1:
                 results = results[0]
 
@@ -249,11 +249,11 @@ def start_detection(
             # Update global frame with annotations
             with frame_lock:
                 annotated_frame, new_objects = postprocess_detections(
-                    frame, detections, class_names, tracker, 
+                    frame, detections, class_names, tracker,
                     box_annotator, label_annotator, detected_objects
                 )
                 global_frame[0] = annotated_frame
-                
+
                 if new_objects:
                     object_detector.update_detected_objects(new_objects)
                     print("New Objects Detected:", new_objects)

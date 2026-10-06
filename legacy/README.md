@@ -16,3 +16,4 @@ Other root-level Python modules predate these snapshots and remain in git histor
 and the working tree for reference; none are imported by the deployed services.
 
 The old static Flask session secret is replaced by an explicit inactive placeholder in this snapshot.
+Trailing whitespace and line endings were normalised without changing the archived control logic.

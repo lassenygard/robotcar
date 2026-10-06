@@ -12,7 +12,7 @@ import time
 
 class LidarScanner:
     """Lidar scanner for scanning and fetching distance data."""
-    
+
     def __init__(self, port="/dev/ttyUSB0"):
         """Initialize the Lidar using the same pattern as the working script."""
         self._port = port
@@ -21,7 +21,7 @@ class LidarScanner:
         self._scan_thread = None
         self.scan_data = []
         self._lock = threading.Lock()
-        
+
         # Initialize lidar
         self._init_lidar()
 
@@ -36,7 +36,7 @@ class LidarScanner:
                 pass
             self._lidar = None
             time.sleep(0.5)
-        
+
         # Create new connection - exactly like working script:
         # lidar = RPLidar(port='/dev/ttyUSB0', motor_pin=None, timeout=3)
         self._lidar = RPLidar(port=self._port, motor_pin=None, timeout=3)
@@ -57,17 +57,17 @@ class LidarScanner:
         print("Starting Lidar scanning...")
         retry_count = 0
         max_retries = 5
-        
+
         while self._is_scanning:
             try:
                 # Use iter_scans() like the working script
                 for scan in self._lidar.iter_scans():
                     if not self._is_scanning:
                         break
-                    
+
                     # Reset retry count on successful scan
                     retry_count = 0
-                    
+
                     # Store scan data with thread safety
                     # Format: [(angle, distance), ...] like working script
                     with self._lock:
@@ -76,19 +76,19 @@ class LidarScanner:
                             for quality, angle, distance in scan
                             if distance > 0  # Ignore invalid measurements
                         ]
-                        
+
             except Exception as e:
                 if not self._is_scanning:
                     break
-                    
+
                 retry_count += 1
                 print(f"Lidar error: {e} (retry {retry_count}/{max_retries})")
-                
+
                 if retry_count >= max_retries:
                     print("Max retries reached, waiting 5 seconds before reset...")
                     time.sleep(5)
                     retry_count = 0
-                
+
                 # Reset lidar on error
                 print("Resetting LIDAR...")
                 try:
@@ -97,7 +97,7 @@ class LidarScanner:
                 except Exception as reset_error:
                     print(f"LIDAR reset failed: {reset_error}")
                     time.sleep(2)
-        
+
         # Cleanup when loop exits
         self._cleanup()
         print("Lidar scanning stopped.")
@@ -111,7 +111,7 @@ class LidarScanner:
         """Stop scanning."""
         print("Stopping LIDAR...")
         self._is_scanning = False
-        
+
         # Wait for scan thread to finish
         if self._scan_thread and self._scan_thread.is_alive():
             self._scan_thread.join(timeout=3.0)
@@ -129,7 +129,7 @@ class LidarScanner:
 
 class GridMap:
     """Represents a grid-based map for lidar data."""
-    
+
     def __init__(self, grid_size=100, resolution=0.05):
         """
         Initialize the grid map.
@@ -176,17 +176,17 @@ class GridMap:
 # Test/Example Usage
 if __name__ == "__main__":
     print("Testing LidarScanner with auto-retry...")
-    
+
     lidar_scanner = LidarScanner()
 
     try:
         lidar_scanner.start_scanning()
-        
+
         for i in range(30):  # Run for 30 seconds
             time.sleep(1)
             scan_data = lidar_scanner.get_scan_data()
             print(f"Scan {i+1}: {len(scan_data)} points")
-            
+
             # Print some sample data
             if scan_data:
                 sample = scan_data[0]

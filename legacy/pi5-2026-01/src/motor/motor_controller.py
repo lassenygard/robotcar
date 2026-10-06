@@ -39,7 +39,7 @@ REAR_RIGHT = (18, 13, 25)
 
 class LocalMotorController:
     """Local GPIO motor controller (for single-Pi setup or testing)."""
-    
+
     def __init__(self):
         self.speed = 0.5
         self.current_movement = "stopped"
@@ -122,15 +122,15 @@ class MotorControlManager:
     def __init__(self, host: str = None, port: int = None):
         self.lock = threading.Lock()
         self.cleaned_up = False
-        
+
         if USE_REMOTE_MOTORS:
             # Bruk remote motor controller (RPi3)
             host = host or RPI3_HOST
             port = port or RPI3_PORT
-            
+
             self.wheels = RemoteMotorController(host, port)
             self.is_remote = True
-            
+
             print(f"🔌 RPi3 Motor Controller at {host}:{port}")
             print("   (connecting in background...)")
         else:
