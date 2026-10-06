@@ -1,0 +1,19 @@
+[Unit]
+Description=RPi3 Motor Controller Service
+After=network.target
+
+[Service]
+Type=simple
+User=pi
+WorkingDirectory=/home/pi/motor_controller
+ExecStart=/usr/bin/python3 /home/pi/motor_controller/motor_service.py
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+# Sikkerhet - stopp motorer ved shutdown
+ExecStop=/usr/bin/python3 -c "from motor_controller import MecanumWheels; MecanumWheels().stop()"
+
+[Install]
+WantedBy=multi-user.target

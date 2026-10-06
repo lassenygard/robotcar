@@ -1,0 +1,3 @@
+# RPi3 Motor Controller - Dependencies
+gpiozero>=1.6.2
+RPi.GPIO>=0.7.1

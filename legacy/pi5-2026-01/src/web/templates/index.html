@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Robot Control Interface</title>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
+    <link href="/static/css/style.css" rel="stylesheet">
+</head>
+<body>
+    <div class="dashboard">
+        <!-- Header -->
+        <header class="header">
+            <h1 class="logo">ROBOTCAR <span class="version">v2.0</span></h1>
+            <div class="status-indicators">
+                <div class="indicator" id="connection-status">
+                    <span class="dot"></span>
+                    <span class="label">SERVER</span>
+                </div>
+                <div class="indicator" id="motor-status">
+                    <span class="dot"></span>
+                    <span class="label">RPi3 MOTORS</span>
+                </div>
+                <div class="indicator" id="mode-indicator">
+                    <span class="dot manual"></span>
+                    <span class="label">MANUAL</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-grid">
+            <!-- Video Feed Panel -->
+            <section class="panel video-panel">
+                <div class="panel-header">
+                    <h2>CAMERA FEED</h2>
+                    <div class="camera-controls">
+                        <button id="cam-front" class="btn-small active">FRONT</button>
+                        <button id="cam-rear" class="btn-small">REAR</button>
+                        <span class="badge live">LIVE</span>
+                    </div>
+                </div>
+                <div class="panel-content">
+                    <div class="video-container">
+                        <img src="/video_feed" alt="Video Feed" id="video-feed">
+                        <div class="video-overlay">
+                            <div class="crosshair"></div>
+                            <div class="camera-label" id="camera-label">FRONT CAM</div>
+                        </div>
+                    </div>
+                    <div class="detected-objects">
+                        <h3>DETECTED OBJECTS</h3>
+                        <ul id="objects-list"></ul>
+                    </div>
+                </div>
+            </section>
+
+            <!-- LIDAR Map Panel -->
+            <section class="panel lidar-panel">
+                <div class="panel-header">
+                    <h2>LIDAR MAP</h2>
+                    <div class="lidar-controls">
+                        <button id="clear-map" class="btn-small">CLEAR</button>
+                        <span class="scan-rate" id="scan-rate">0 Hz</span>
+                    </div>
+                </div>
+                <div class="panel-content">
+                    <div class="lidar-container">
+                        <canvas id="lidar-canvas" width="400" height="400"></canvas>
+                        <div class="lidar-legend">
+                            <div class="legend-item">
+                                <span class="legend-color obstacle"></span>
+                                <span>Obstacle</span>
+                            </div>
+                            <div class="legend-item">
+                                <span class="legend-color clear"></span>
+                                <span>Clear</span>
+                            </div>
+                            <div class="legend-item">
+                                <span class="legend-color robot"></span>
+                                <span>Robot</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="position-display">
+                        <div class="pos-item">
+                            <span class="pos-label">X</span>
+                            <span class="pos-value" id="pos-x">0.00</span>
+                            <span class="pos-unit">m</span>
+                        </div>
+                        <div class="pos-item">
+                            <span class="pos-label">Y</span>
+                            <span class="pos-value" id="pos-y">0.00</span>
+                            <span class="pos-unit">m</span>
+                        </div>
+                        <div class="pos-item">
+                            <span class="pos-label">θ</span>
+                            <span class="pos-value" id="pos-theta">0.0</span>
+                            <span class="pos-unit">°</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Control Panel -->
+            <section class="panel control-panel">
+                <div class="panel-header">
+                    <h2>CONTROLS</h2>
+                    <button id="toggle-mode" class="btn-mode">
+                        <span class="mode-icon">▶</span>
+                        <span class="mode-text">AUTO MODE</span>
+                    </button>
+                </div>
+                <div class="panel-content">
+                    <!-- Direction Controls -->
+                    <div class="controls-grid">
+                        <div class="control-row">
+                            <div class="spacer"></div>
+                            <button id="move_forward" class="control-btn" data-key="W">
+                                <span class="arrow">▲</span>
+                                <span class="key-hint">W</span>
+                            </button>
+                            <div class="spacer"></div>
+                        </div>
+                        <div class="control-row">
+                            <button id="strafe_left" class="control-btn" data-key="A">
+                                <span class="arrow">◀</span>
+                                <span class="key-hint">A</span>
+                            </button>
+                            <button id="stop" class="control-btn stop-btn">
+                                <span class="stop-icon">■</span>
+                                <span class="key-hint">SPC</span>
+                            </button>
+                            <button id="strafe_right" class="control-btn" data-key="D">
+                                <span class="arrow">▶</span>
+                                <span class="key-hint">D</span>
+                            </button>
+                        </div>
+                        <div class="control-row">
+                            <div class="spacer"></div>
+                            <button id="move_backward" class="control-btn" data-key="S">
+                                <span class="arrow">▼</span>
+                                <span class="key-hint">S</span>
+                            </button>
+                            <div class="spacer"></div>
+                        </div>
+                    </div>
+
+                    <!-- Rotation Controls -->
+                    <div class="rotation-controls">
+                        <button id="rotate_counterclockwise" class="control-btn rotate-btn">
+                            <span class="rotate-icon">↺</span>
+                            <span class="key-hint">←</span>
+                        </button>
+                        <div class="rotation-label">ROTATE</div>
+                        <button id="rotate_clockwise" class="control-btn rotate-btn">
+                            <span class="rotate-icon">↻</span>
+                            <span class="key-hint">→</span>
+                        </button>
+                    </div>
+
+                    <!-- Speed Control -->
+                    <div class="speed-control">
+                        <label for="speed-slider">SPEED</label>
+                        <input type="range" id="speed-slider" min="0" max="100" value="50">
+                        <span class="speed-value" id="speed-value">50%</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Navigation Panel -->
+            <section class="panel nav-panel">
+                <div class="panel-header">
+                    <h2>AUTONOMOUS NAVIGATION</h2>
+                </div>
+                <div class="panel-content">
+                    <div class="nav-status">
+                        <div class="status-item">
+                            <span class="status-label">State</span>
+                            <span class="status-value" id="nav-state">IDLE</span>
+                        </div>
+                        <div class="status-item">
+                            <span class="status-label">Obstacles</span>
+                            <span class="status-value" id="obstacle-count">0</span>
+                        </div>
+                        <div class="status-item">
+                            <span class="status-label">Distance</span>
+                            <span class="status-value" id="traveled-distance">0.0 m</span>
+                        </div>
+                    </div>
+                    
+                    <div class="nav-modes">
+                        <h3>Navigation Mode</h3>
+                        <div class="nav-mode-buttons">
+                            <button class="nav-mode-btn" id="nav-explore" data-mode="explore">
+                                <span class="nav-icon">🔍</span>
+                                <span>Explore</span>
+                            </button>
+                            <button class="nav-mode-btn" id="nav-wall-follow" data-mode="wall_follow">
+                                <span class="nav-icon">🧱</span>
+                                <span>Wall Follow</span>
+                            </button>
+                            <button class="nav-mode-btn" id="nav-map-room" data-mode="map_room">
+                                <span class="nav-icon">🗺️</span>
+                                <span>Map Room</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="nav-params">
+                        <h3>Parameters</h3>
+                        <div class="param-item">
+                            <label for="safe-distance">Safe Distance</label>
+                            <input type="number" id="safe-distance" value="500" min="100" max="2000" step="50">
+                            <span class="param-unit">mm</span>
+                        </div>
+                        <div class="param-item">
+                            <label for="lidar-offset">LIDAR Offset</label>
+                            <input type="number" id="lidar-offset" value="-105" min="-180" max="180" step="5">
+                            <span class="param-unit">°</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- Console/Log -->
+        <footer class="console">
+            <div class="console-header">
+                <span>CONSOLE</span>
+                <button id="clear-console" class="btn-small">CLEAR</button>
+            </div>
+            <div class="console-output" id="console-output">
+                <div class="log-entry info">[SYSTEM] Robot Control Interface v2.0 initialized</div>
+            </div>
+        </footer>
+    </div>
+
+    <script src="https://cdn.socket.io/4.8.1/socket.io.min.js" crossorigin="anonymous"></script>
+    <script src="/static/js/controls.js"></script>
+</body>
+</html>

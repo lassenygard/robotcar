@@ -1,0 +1,27 @@
+[Unit]
+Description=Robotcar %i worker
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=pi
+Group=pi
+WorkingDirectory=/opt/robotcar
+EnvironmentFile=/etc/robotcar/robotcar.env
+Environment=PYTHONUNBUFFERED=1
+Environment=LIBCAMERA_LOG_LEVELS=*:ERROR
+Environment=OPENBLAS_NUM_THREADS=1
+Environment=OMP_NUM_THREADS=1
+ExecStart=/usr/bin/python3 -m robotcar.%i
+Restart=on-failure
+RestartSec=3
+TimeoutStopSec=5
+KillSignal=SIGTERM
+UMask=0077
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=/run/robotcar /var/lib/robotcar
+
+[Install]
+WantedBy=multi-user.target

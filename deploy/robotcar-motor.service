@@ -1,0 +1,23 @@
+[Unit]
+Description=Robotcar GPIO motor controller with independent deadman
+After=network.target
+
+[Service]
+User=pi
+Group=pi
+WorkingDirectory=/opt/robotcar
+EnvironmentFile=/etc/robotcar/robotcar.env
+Environment=PYTHONUNBUFFERED=1
+Environment=GPIOZERO_PIN_FACTORY=rpigpio
+ExecStart=/usr/bin/python3 -m robotcar.motor
+ExecStopPost=/usr/bin/python3 -c 'from robotcar.motor import GPIOWheels; GPIOWheels().close()'
+Restart=on-failure
+RestartSec=1
+TimeoutStopSec=2
+KillSignal=SIGTERM
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=read-only
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,14 @@
+__pycache__/
+*.py[cod]
+.DS_Store
+._*
+.venv/
+.env
+*.log
+data/
+*.hef
+*.npz
+*.jpg
+*.pem
+*.key
+.pytest_cache/
