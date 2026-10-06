@@ -4,6 +4,7 @@ import re
 import threading
 import time
 from pathlib import Path
+from zipfile import BadZipFile
 import cv2
 import numpy as np
 from aiohttp import web
@@ -23,11 +24,19 @@ class Mapper:
         self.last_save = time.monotonic()
         self.last_keyframe = 0.0
         self.last_relocalize = 0.0
+        self.load_error = None
         (DATA / 'maps').mkdir(parents=True, exist_ok=True)
         name = read_json(DATA/'active_map.json').get('name', '')
-        if re.fullmatch(r'[a-zA-Z0-9_-]{1,64}', name) and (DATA/'maps'/(name+'.npz')).exists():
-            self.map = OccupancyMap.load(DATA/'maps'/(name+'.npz'))
-            self.error = 'Saved map loaded; waiting for measured localisation'
+        if name:
+            try:
+                if not isinstance(name, str) or not re.fullmatch(r'[a-zA-Z0-9_-]{1,64}', name):
+                    raise ValueError('invalid saved map name')
+                self.map = OccupancyMap.load(DATA/'maps'/(name+'.npz'))
+                self.error = 'Saved map loaded; waiting for measured localisation'
+            except (OSError, ValueError, KeyError, TypeError, EOFError, BadZipFile):
+                self.load_error = 'Saved map could not be loaded. Choose another map or explicitly start a new map.'
+                self.error = self.load_error
+                self.map.mapping = False
 
     def features(self):
         path = RUN / 'front.jpg'
@@ -75,6 +84,9 @@ class Mapper:
 
     def process(self):
         with self.lock:
+            if self.load_error:
+                self.error = self.load_error
+                return
             scan = read_json(RUN / 'lidar.json')
             age = time.monotonic() - scan.get('monotonic', 0)
             if scan.get('error') or age > .8 or len(scan.get('points', [])) < 60:
@@ -121,6 +133,8 @@ class Mapper:
     def action(self, msg):
         with self.lock:
             action = msg.get('action')
+            if self.load_error and action not in ('new', 'load'):
+                raise ValueError(self.load_error)
             if action in ('save', 'load'):
                 name = str(msg.get('name', ''))
                 if not re.fullmatch(r'[a-zA-Z0-9_-]{1,64}', name):
@@ -133,6 +147,7 @@ class Mapper:
                     self.map.name = name
                 else:
                     self.map = OccupancyMap.load(path)
+                    self.load_error = None
                     self.last_scan = 0.0
                     self.error = 'Map loaded; localisation required'
                 atomic_json(DATA/'active_map.json', {'name':name})
@@ -140,6 +155,8 @@ class Mapper:
                 if np.count_nonzero(self.map.grid):
                     self.map.save(DATA/'maps'/('backup-'+time.strftime('%Y%m%d-%H%M%S')+'.npz'))
                 self.map = OccupancyMap()
+                self.load_error = None
+                self.error = 'Waiting for valid LiDAR scans'
                 atomic_json(DATA/'active_map.json', {'name':''})
                 self.last_sequence = -1
             elif action == 'relocalize':

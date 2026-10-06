@@ -287,6 +287,7 @@ def create_app(motor=None):
     app.router.add_route('*', '/login', login)
     app.router.add_get('/', index)
     app.router.add_get('/health', health)
+    app.router.add_get('/api/session', health)  # Auth middleware distinguishes expiry from a network outage.
     app.router.add_get('/ws', websocket)
     app.router.add_get('/video/{camera}', proxy)
     app.router.add_get('/map.png', proxy)

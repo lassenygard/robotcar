@@ -6,7 +6,6 @@ not elapsed motor command time. Map files contain private apartment data.
 """
 import heapq
 import math
-import os
 from pathlib import Path
 
 import cv2
@@ -14,6 +13,7 @@ import numpy as np
 from scipy.ndimage import distance_transform_edt, binary_dilation
 from scipy.optimize import minimize
 from scipy.spatial import cKDTree
+from .common import atomic_file
 
 
 def wrap(angle):
@@ -237,25 +237,27 @@ class OccupancyMap:
         return sorted(targets, key=lambda p: np.linalg.norm(np.asarray(p)-self.pose[:2]))
 
     def save(self, path):
-        path = Path(path)
-        path.parent.mkdir(parents=True, exist_ok=True)
-        temp = path.with_suffix('.tmp.npz')
         import json
-        np.savez_compressed(temp, grid=self.grid, resolution=self.resolution, pose=self.pose,
-                            keyframes=json.dumps(self.keyframes), version=1)
-        os.replace(temp, path)
+        with atomic_file(path) as stream:
+            np.savez_compressed(stream, grid=self.grid, resolution=self.resolution, pose=self.pose,
+                                keyframes=json.dumps(self.keyframes, allow_nan=False), version=1)
 
     @classmethod
     def load(cls, path):
         import json
         with np.load(path, allow_pickle=False) as data:
             grid = data['grid']
-            if grid.ndim != 2 or grid.shape[0] != grid.shape[1] or grid.shape[0] > 2000 or not np.isfinite(grid).all():
+            if grid.ndim != 2 or grid.shape[0] != grid.shape[1] or not 10 <= grid.shape[0] <= 2000 or not np.isfinite(grid).all():
                 raise ValueError('invalid map dimensions or values')
-            result = cls(grid.shape[0], float(data['resolution']))
+            resolution, pose = float(data['resolution']), data['pose']
+            if not math.isfinite(resolution) or not .01 <= resolution <= 1:
+                raise ValueError('invalid map resolution')
+            if pose.shape != (3,) or not np.isfinite(pose).all() or int(data['version']) != 1:
+                raise ValueError('invalid map pose or version')
+            result = cls(grid.shape[0], resolution)
             result.grid = grid.astype(np.float32)
             result.keyframes = json.loads(str(data['keyframes']))
-            result.pose = data['pose'].copy()
+            result.pose = pose.copy()
         result.mapping, result.localized = False, False  # A saved pose is not a live location.
         result.revision = 5  # Enable scan-to-map correction immediately after localisation.
         result.name = Path(path).stem

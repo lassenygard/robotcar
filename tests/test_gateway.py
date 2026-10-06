@@ -128,6 +128,13 @@ class GatewayTests(unittest.IsolatedAsyncioTestCase):
         await ws.send_str(json.dumps([]))
         self.assertIn('JSON-objekt', (await self.message(ws, 'error'))['error'])
 
+    async def test_session_probe_requires_a_valid_login(self):
+        response = await self.client.get('/api/session')
+        self.assertEqual(response.status, 200)
+        self.client.session.cookie_jar.clear()
+        response = await self.client.get('/api/session')
+        self.assertEqual(response.status, 401)
+
 
 if __name__ == '__main__':
     unittest.main()

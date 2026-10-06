@@ -2,6 +2,7 @@ import math
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 import numpy as np
 from robotcar.mapping import OccupancyMap, align_scan, transform, scan_points
 
@@ -48,6 +49,30 @@ class MappingTests(unittest.TestCase):
             scan_points([])
         points = scan_points([[0, 2, 10]]*60)
         np.testing.assert_allclose(points[0], [2, 0])
+
+    def test_failed_storage_flush_keeps_previous_map(self):
+        m = OccupancyMap(100, .1)
+        m.grid[20:30, 20:30] = 4
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory)/'apartment.npz'
+            m.save(path)
+            original = path.read_bytes()
+            m.grid[:] = -4
+            with patch('robotcar.common.os.fsync', side_effect=OSError('storage unavailable')):
+                with self.assertRaises(OSError):
+                    m.save(path)
+            self.assertEqual(path.read_bytes(), original)
+            self.assertEqual(OccupancyMap.load(path).grid[25,25], 4)
+            self.assertEqual(list(Path(directory).iterdir()), [path])
+
+    def test_invalid_saved_geometry_cannot_be_used_for_navigation(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory)/'invalid.npz'
+            for resolution, pose in [(0, [0,0,0]), (float('nan'), [0,0,0]), (.05, [0,float('inf'),0])]:
+                np.savez_compressed(path, grid=np.zeros((100,100)), resolution=resolution,
+                                    pose=pose, keyframes='[]', version=1)
+                with self.assertRaises(ValueError):
+                    OccupancyMap.load(path)
 
 
 if __name__ == '__main__':
