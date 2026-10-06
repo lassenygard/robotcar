@@ -20,15 +20,17 @@ def password_matches(password, encoded):
     return hmac.compare_digest(actual, expected)
 
 
-def main():
+def create_app(motor=None):
     username = os.environ.get('WEB_USERNAME', 'pi')
     password_hash = os.environ.get('WEB_PASSWORD_HASH', '')
     if not password_hash:
         raise RuntimeError('WEB_PASSWORD_HASH must be configured before starting the gateway')
     sessions, attempts = {}, deque()
-    motor = MotorClient()
+    motor = motor if motor is not None else MotorClient()
     controller = None
+    control_lock = asyncio.Lock()
     connections = set()
+    releases = set()
 
     @web.middleware
     async def auth(request, handler):
@@ -77,7 +79,7 @@ def main():
                 response = web.HTTPFound('/')
                 response.set_cookie('robotcar_session', token, httponly=True, samesite='Strict', max_age=43200,
                                     secure=request.secure or request.headers.get('X-Forwarded-Proto') == 'https')
-                return response
+                raise response
             error = '<p>Feil brukernavn eller passord.</p>'
         return web.Response(content_type='text/html', text='''<!doctype html><html lang="no"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Robotcar · Logg inn</title><style>body{background:#101722;color:#eef5fb;font:18px system-ui;max-width:380px;margin:12vh auto;padding:24px}input,button{box-sizing:border-box;width:100%;padding:14px;margin:8px 0;border-radius:8px;border:1px solid #526272}button{background:#62d7b6;font-weight:700}h1{font-size:32px}</style><h1>Robotcar</h1><p>Live-kjøring og kart</p>'''+error+'''<form method="post"><label>Brukernavn<input name="username" autocomplete="username" required></label><label>Passord<input type="password" name="password" autocomplete="current-password" required></label><button>Logg inn</button></form></html>''')
 
@@ -109,24 +111,27 @@ def main():
 
     async def action(request):
         nonlocal controller
-        msg = await request.json()
         try:
-            name = msg.get('action')
-            if name in ('stop', 'estop'):
-                await navigator.stop()
-                controller = None
-                return web.json_response({'ok':True})
-            if controller is not None:
-                raise ValueError('Stopp manuell kjøring før du endrer kart eller navigasjon.')
-            if name in ('goto','explore','patrol','scan'):
-                await navigator.start(name, msg)
-                result = navigator.status()
-            elif name == 'patrol_settings':
-                result = navigator.save_patrol(msg)
-            else:
-                if navigator.mode != 'idle':
+            msg = await request.json()
+            if not isinstance(msg, dict):
+                raise ValueError('Forespørselen må være et JSON-objekt.')
+            async with control_lock:
+                name = msg.get('action')
+                if name in ('stop', 'estop'):
                     await navigator.stop()
-                result = await map_call(msg)
+                    controller = None
+                    return web.json_response({'ok':True})
+                if controller is not None:
+                    raise ValueError('Stopp manuell kjøring før du endrer kart eller navigasjon.')
+                if name in ('goto','explore','patrol','scan'):
+                    await navigator.start(name, msg)
+                    result = navigator.status()
+                elif name == 'patrol_settings':
+                    result = navigator.save_patrol(msg)
+                else:
+                    if navigator.mode != 'idle':
+                        await navigator.stop()
+                    result = await map_call(msg)
             return web.json_response({'ok':True, **result})
         except (ValueError, KeyError, TypeError, OSError, asyncio.TimeoutError) as exc:
             return web.json_response({'ok':False, 'error':str(exc)}, status=400)
@@ -135,6 +140,16 @@ def main():
         lidar = read_json(RUN/'lidar.json')
         map_state = read_json(RUN/'map.json')
         vision = read_json(RUN/'vision.json')
+        cameras = read_json(RUN/'cameras.json')
+        try:
+            camera_file_age = max(0, time.time()-(RUN/'cameras.json').stat().st_mtime)
+        except OSError:
+            camera_file_age = 99
+        for name in ('front', 'rear'):
+            camera = cameras.setdefault(name, {})
+            camera['age_s'] = camera.get('age_s', 99)+camera_file_age
+            if camera['age_s'] > 1:
+                camera.update(fps=0, error='Kameraet har sluttet å oppdatere.')
         # A dead sensor process cannot leave a permanently green indicator.
         lidar['age_s'] = time.monotonic()-lidar.get('monotonic', 0)
         if lidar['age_s'] > 1:
@@ -147,7 +162,7 @@ def main():
                 map_state['error'] = 'Karttjenesten har sluttet å oppdatere.'
         except OSError:
             map_state = {'localized':False, 'error':'Karttjenesten starter.'}
-        return dict(motor=motor.state, cameras=read_json(RUN/'cameras.json'), lidar=lidar,
+        return dict(motor=motor.state, cameras=cameras, lidar=lidar,
                     map=map_state, vision=vision, navigation=navigator.status())
 
     async def websocket(request):
@@ -180,51 +195,67 @@ def main():
                     continue
                 try:
                     msg = json.loads(message.data)
+                    if not isinstance(msg, dict):
+                        raise ValueError('Kommandoen må være et JSON-objekt.')
                     if sessions.get(session_id, 0) < time.monotonic():
                         raise ValueError('Innloggingen er utløpt.')
                     command = msg.get('action')
                     if command == 'ping':
                         await ws.send_json({'type':'pong', 'sent':msg.get('sent')})
                         continue
-                    if command == 'stop':
-                        await navigator.stop()
-                        controller = None
-                    elif command == 'arm':
-                        if controller not in (None, ws):
-                            raise ValueError('En annen nettleser styrer bilen.')
-                        await navigator.stop()
-                        await motor.request('arm')
-                        controller = ws
-                    elif command == 'drive':
-                        if controller is not ws:
-                            raise ValueError('Aktiver motorene først.')
-                        if time.monotonic()-tickets.get(msg.get('ticket'), -100) > .35:
-                            await motor.stop()
+                    async with control_lock:
+                        if command == 'stop':
+                            await navigator.stop()
                             controller = None
-                            raise ValueError('Kjørekommandoen var for gammel. Bilen er stoppet.')
-                        cameras = read_json(RUN/'cameras.json')
-                        try:
-                            camera_file_age = time.time()-(RUN/'cameras.json').stat().st_mtime
-                        except OSError:
-                            camera_file_age = 99
-                        if camera_file_age > 1 or cameras.get('front',{}).get('age_s',99) > 1:
-                            raise ValueError('Kameraet er utilgjengelig; kjøring er stoppet.')
-                        left, right = float(msg['left']), float(msg['right'])
-                        await motor.request('drive', left=left, right=right, ttl=.3, mode='manual')
-                    else:
-                        raise ValueError('Ukjent kommando.')
+                        elif command == 'arm':
+                            if controller not in (None, ws):
+                                raise ValueError('En annen nettleser styrer bilen.')
+                            await navigator.stop()
+                            await motor.request('arm')
+                            controller = ws
+                        elif command == 'drive':
+                            if controller is not ws:
+                                raise ValueError('Aktiver motorene først.')
+                            if time.monotonic()-tickets.get(msg.get('ticket'), -100) > .35:
+                                await motor.stop()
+                                controller = None
+                                raise ValueError('Kjørekommandoen var for gammel. Bilen er stoppet.')
+                            cameras = read_json(RUN/'cameras.json')
+                            try:
+                                camera_file_age = time.time()-(RUN/'cameras.json').stat().st_mtime
+                            except OSError:
+                                camera_file_age = 99
+                            if camera_file_age > 1 or cameras.get('front',{}).get('age_s',99) > 1:
+                                raise ValueError('Kameraet er utilgjengelig; kjøring er stoppet.')
+                            left, right = float(msg['left']), float(msg['right'])
+                            await motor.request('drive', left=left, right=right, ttl=.3, mode='manual')
+                        else:
+                            raise ValueError('Ukjent kommando.')
                     await ws.send_json({'type':'ack','action':command})
                 except (ValueError, KeyError, TypeError) as exc:
-                    if controller is ws:
-                        await motor.stop()
-                        controller = None
+                    async with control_lock:
+                        if controller is ws:
+                            await motor.stop()
+                            controller = None
                     await ws.send_json({'type':'error', 'error':str(exc)})
         finally:
             task.cancel()
             connections.discard(ws)
-            if controller is ws:
-                await motor.stop()
-                controller = None
+            async def release_control():
+                nonlocal controller
+                async with control_lock:
+                    if controller is ws:
+                        controller = None
+                        await motor.stop()
+            # aiohttp can cancel this handler when its TCP connection closes.
+            # The stop must finish even if that cancellation arrives in cleanup.
+            release = asyncio.create_task(release_control())
+            releases.add(release)
+            release.add_done_callback(releases.discard)
+            try:
+                await asyncio.shield(release)
+            finally:
+                await asyncio.gather(task, return_exceptions=True)
         return ws
 
     async def startup(app):
@@ -233,20 +264,24 @@ def main():
         async def poll_motor():
             nonlocal controller
             while True:
-                try:
-                    await motor.request('status')
-                    if not motor.state.get('armed'):
+                async with control_lock:
+                    try:
+                        await motor.request('status')
+                        if not motor.state.get('armed'):
+                            controller = None
+                    except ValueError:
                         controller = None
-                except ValueError:
-                    controller = None
                 await asyncio.sleep(.15)
         task = asyncio.create_task(poll_motor())
         yield
-        await navigator.stop()
         task.cancel()
+        await asyncio.gather(task, return_exceptions=True)
+        await navigator.stop()
         for ws in list(connections):
             await ws.close()
+        await asyncio.gather(*releases, return_exceptions=True)
         await http.close()
+        motor.disconnect()
 
     app.cleanup_ctx.append(startup)
     app.router.add_route('*', '/login', login)
@@ -256,6 +291,11 @@ def main():
     app.router.add_get('/video/{camera}', proxy)
     app.router.add_get('/map.png', proxy)
     app.router.add_post('/api/action', action)
+    return app
+
+
+def main():
+    app = create_app()
     web.run_app(app, host=os.environ.get('WEB_BIND', '0.0.0.0'), port=8080, access_log=None)
 
 

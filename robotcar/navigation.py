@@ -9,13 +9,20 @@ from .mapping import wrap, scan_points, align_scan
 
 
 class MotorClient:
-    def __init__(self):
-        self.host = os.environ.get('MOTOR_HOST', '192.168.4.43')
+    def __init__(self, host=None, port=5001):
+        self.host = host or os.environ.get('MOTOR_HOST', '192.168.4.43')
+        self.port = port
         self.token = secret()
         self.reader = self.writer = None
         self.lock = asyncio.Lock()
         self.state = {'connected': False, 'armed': False}
         self.seq = 0
+
+    def disconnect(self, error='Motor connection closed'):
+        if self.writer:
+            self.writer.close()
+        self.reader = self.writer = None
+        self.state = {'connected':False, 'armed':False, 'error':error}
 
     async def request(self, action, **kwargs):
         async with self.lock:
@@ -24,7 +31,8 @@ class MotorClient:
                 if not self.writer or self.writer.is_closing():
                     if action == 'drive':
                         raise ValueError('motor connection lost; rearm before driving')
-                    self.reader, self.writer = await asyncio.wait_for(asyncio.open_connection(self.host, 5001), .5)
+                    self.reader, self.writer = await asyncio.wait_for(
+                        asyncio.open_connection(self.host, self.port, limit=4096), .5)
                     self.writer.get_extra_info('socket').setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
                 self.seq += 1
                 msg = dict(token=self.token, action=action, seq=self.seq, **kwargs)
@@ -33,15 +41,20 @@ class MotorClient:
                 reply = await asyncio.wait_for(self.reader.readline(), .5)
                 if not reply:
                     raise ConnectionError('motor connection closed')
-                self.state = {**json.loads(reply), 'connected': True, 'rtt_ms':round((time.monotonic()-start)*1000, 1)}
+                data = json.loads(reply)
+                if not isinstance(data, dict) or data.get('seq') != self.seq:
+                    raise ConnectionError('motor reply does not match the command')
+                self.state = {**data, 'connected': True, 'rtt_ms':round((time.monotonic()-start)*1000, 1)}
                 if not self.state.get('ok'):
                     raise ValueError(self.state.get('error', 'motor command refused'))
                 return self.state
+            except asyncio.CancelledError:
+                # A reply may already be in flight. Never let the next command
+                # consume it, or reuse a socket whose arm/drive outcome is unknown.
+                self.disconnect('Motor command cancelled; rearm required')
+                raise
             except (OSError, asyncio.TimeoutError, json.JSONDecodeError) as exc:
-                if self.writer:
-                    self.writer.close()
-                self.reader = self.writer = None
-                self.state = {'connected':False, 'armed':False, 'error':str(exc)}
+                self.disconnect(str(exc))
                 raise ValueError('Motor connection unavailable') from exc
 
     async def stop(self):

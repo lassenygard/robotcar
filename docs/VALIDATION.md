@@ -31,13 +31,28 @@ bildetrekk; ingen kamerabilder er lagt i det offentlige repoet.
 
 ## Automatiske tester
 
-19 tester består med `python3 -m unittest discover -s tests -v`.
+25 tester består lokalt og på Pi 4 med `python3 -m unittest discover -s tests -v`.
+Den foregående versjonens 19 tester besto også på Pi 5. Kjøringen av de seks
+nye testene på Pi 5 ble avbrutt da maskinen mistet nettverkstilgangen;
+den skal kjøres på nytt når den er tilgjengelig.
 
 Testene dekker blant annet tapt heartbeat, uforlengbar bevegelsesgrense,
 pause før ny aktivering, kommando-replay, ikke-endelige tall, sperret autonomi,
 LiDAR-pakkeformat og enheter, ICP mot kjent bevegelse, avvisning av ukjent/
 blokkert rute, kartlagring uten å godkjenne gammel posisjon, visuell
 posisjonshypotese bekreftet av LiDAR, tvetydige romretninger og hindringsstopp.
+
+De seks nye nettverkstestene bruker lokale, simulerte motorer uten GPIO. De
+kontrollerer at en avbrutt motorkommando lukker forbindelsen før neste kommando,
+at et svar med feil sekvensnummer avvises, at to samtidige nettlesere ikke kan
+overta hverandres kontroll, og at frakobling stopper motorene. De dekker også
+utløpte kommandobilletter, et dødt kamera med gammel statusfil og ugyldige
+JSON-forespørsler. WebSocket-oppryddingen fullfører stopp selv om nettserveren
+kansellerer forespørselen ved nettbrudd.
+
+Etter oppdatering på Pi 4 var målt tilstand `startup_disarmed`, venstre/høyre
+utgang 0, autonomi av og kontinuerlig grense 2,5 s. Ingen nye fysiske kjørepulser
+ble brukt i denne verifiseringen.
 
 ## Ikke ferdig verifisert
 
@@ -49,8 +64,10 @@ posisjonshypotese bekreftet av LiDAR, tvetydige romretninger og hindringsstopp.
 3. **Strøm:** kernel-loggen inneholder gjentatte undervoltage-hendelser. Senere
    måling var `throttled=0x50000`, som viser tidligere hendelser uten aktivt
    spenningsvarsel akkurat ved avlesningen. Stabil forsyning må bekreftes under last.
-4. **Nettadresse:** robotcar.nygardene.no mangler DNS (NXDOMAIN). HTTPS/proxy og
-   ekstern video-/styringslatens kan ikke godkjennes før ruten er opprettet.
+4. **Nettadresse:** DNS og nginx/TLS er opprettet. Sertifikatvalidering og
+   nginx-konfigurasjon består, men Pi 5 falt ut av nettverket under kontrollen.
+   Domenet svarer 502 mens backend er utilgjengelig. Ekstern innlogging,
+   video og styringslatens må verifiseres når Pi 5 er tilbake.
 5. **GitHub-publisering:** repository finnes og kan leses, men forsøk på å
    opprette arbeidsgrenen via GitHub-koblingen ga 403, «Resource not accessible
    by integration». Installasjonslisten mangler appinstallasjon for

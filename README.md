@@ -8,10 +8,13 @@ Pi 4; kameraer, Hailo-8, LiDAR og kartlegging kjører på Pi 5.
 LiDAR-adapteren finnes, men sensoren svarer ikke. Full kartlegging, lokalisering
 og autonome turer er derfor **ikke fysisk godkjent**. De er implementert, testet
 med syntetiske data og sperret fra å kjøre før sensorer og kalibrering er i orden.
+DNS og HTTPS er nå satt opp. Pi 5 ble utilgjengelig på nettverket under siste
+verifisering, så innlogging/video via domenet venter på at den kommer tilbake.
 
 ## Bruk
 
 - Lokalt kontrollpanel: `http://192.168.4.44:8080`.
+- Ekstern adresse: `https://robotcar.nygardene.no` — krever at Pi 5 er på nett.
 - Innlogging ligger i `/home/pi/.ssh/robotcar-web-login.conf` på arbeidsmaskinen.
 - Trykk **Aktiver motorer**, og hold en pil eller W/A/S/D. Slipp for å stoppe.
 - Mellomrom og den røde **STOPP**-knappen stopper kjøring og navigasjon.
@@ -31,6 +34,7 @@ Ingen automatisk tur starter ved oppstart eller etter nettverksbrudd.
 |---|---|---|
 | Pi 4, `192.168.4.43` | GPIO, motorpolariteter, tidsgrense og stopp ved nettverksbrudd | `robotcar-motor` |
 | Pi 5, `192.168.4.44` | To CSI-kameraer, Hailo-8, RPLiDAR, kartmatching og webkontroll | `robotcar@camera`, `@vision`, `@lidar`, `@mapworker`, `@webapp` |
+| Eksisterende edge, `192.168.4.58` | HTTPS og videresending av video/WebSocket til Pi 5 | nginx, certbot |
 
 Kontrollkommandoer går over en egen WebSocket og en autentisert TCP-forbindelse
 til motor-Pi-en. JPEG-bilder kodes én gang og siste bilde deles mellom seerne;

@@ -163,6 +163,7 @@ def main():
                     line = self.rfile.readline(2049)
                     if not line or len(line) > 2048:
                         break
+                    msg = {}
                     try:
                         msg = json.loads(line)
                         if not isinstance(msg, dict) or not hmac.compare_digest(str(msg.get('token', '')), token):
@@ -172,6 +173,7 @@ def main():
                         if guard.owner == owner:
                             guard.stop('invalid_command')
                         reply = {'ok': False, 'error': str(exc), **guard.status()}
+                    reply['seq'] = msg.get('seq')
                     self.wfile.write((json.dumps(reply) + '\n').encode())
             except (OSError, TimeoutError):
                 pass

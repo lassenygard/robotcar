@@ -1,11 +1,19 @@
 # robotcar.nygardene.no
 
-Per 2026-10-06 svarer offentlig DNS **NXDOMAIN** for robotcar.nygardene.no.
-Rotdomenet nygardene.no peker til 84.48.104.79. Autoritativ DNS bruker hyp.net /
-Domeneshop. DNS-/reverse-proxy-tilgang er ikke tilgjengelig for dette arbeidet
-ennå, så robotpanelet er kun verifisert på lokalnettet.
+DNS er opprettet hos Domeneshop 2026-10-06:
 
-Den planlagte ruten er:
+```
+robotcar.nygardene.no CNAME nygardene.duckdns.org
+nygardene.duckdns.org A     84.48.104.79
+```
+
+Den eksisterende nginx-serveren på `192.168.4.58` har nå en egen virtuell vert
+for robotcar, med et gyldig Let's Encrypt-sertifikat til 2027-01-04.
+Certbot-timeren er aktiv, og eksisterende deploy-hook validerer og laster nginx
+på nytt ved sertifikatfornyelse. Bare robotcar-navnet er fjernet fra listen
+over gamle, deaktiverte vertsnavn; øvrige nettsteder er bevart.
+
+Den installerte ruten er:
 
 ```
 Nettleser -- HTTPS/WSS --> eksisterende edge/reverse proxy
@@ -13,11 +21,21 @@ Nettleser -- HTTPS/WSS --> eksisterende edge/reverse proxy
                                               -- token --> 192.168.4.43:5001
 ```
 
-Opprett DNS-oppføringen mot den eksisterende offentlige edge-adressen og bruk
-`deploy/robotcar.nginx.conf` i den eksisterende HTTPS-proxyen med gyldig TLS.
-Konfigurasjonen skal tilpasses den faktiske edge-verten og sertifikatene, ikke
-legges over en eksisterende standardserver. WebSocket må støttes og buffering
-må være av for videostrømmen. Innlogging håndteres av robotappen.
+HTTP omdirigeres til HTTPS. WebSocket-oppgradering er satt opp, og proxybuffering
+er av for video. Innlogging håndteres av robotappen; motortokenet blir aldri
+sendt til nettleseren. Konfigurasjonen finnes i
+`deploy/robotcar.nygardene.no.conf` og `deploy/robotcar.nginx.conf`.
+
+`sudo sh deploy/install-edge.sh` installerer på edge-verten, tar sikkerhetskopi
+av de berørte nginx-filene, skaffer/fornyer eget sertifikat via den eksisterende
+ACME-kontoen og ruller konfigurasjonen tilbake ved feil. Sikkerhetskopien ved
+første vellykkede installasjon er
+`/var/backups/robotcar-edge/20261006T114212Z`.
+
+Under siste kontroll ble Pi 5 utilgjengelig fra arbeidsmaskinen, Pi 4 og edge.
+HTTPS svarer derfor **502** mens backend er borte. Sertifikat og nginx-oppsett
+er kontrollert, men en full innlogget video-/WSS-test gjennom domenet er **ikke
+bestått ennå**. Mulig tomt batteri er ikke fysisk bekreftet.
 
 Ikke videresend Pi 4 sin motorport 5001 eller Pi 5 sine interne sensorporter
 8800/8810 til Internett. Sensorportene lytter bare på 127.0.0.1. Ikke publiser
@@ -32,6 +50,13 @@ Etter DNS/proxy-oppsett skal følgende kontrolleres fra et eksternt nett:
 4. Mål videoalder og kommandoforsinkelse. Test at nettbrudd stopper en kort
    bevegelse med en person ved bilen.
 5. Bekreft at privat kamerafeed og rå motortjeneste ikke kan nås direkte.
+
+Når Pi 5 er tilbake, kan `python3 scripts/check_gateway.py` kontrollere
+innlogging, avvisning av uautorisert/feil-origin trafikk, begge videostrømmer
+og WebSocket-rundtur. Skriptet leser den lokale passordfilen, skriver bare
+måleverdier og sender ingen aktiverings- eller kjørekommandoer. Kjør det fra
+et annet nett for reell måling utenfra; en test via offentlig IP fra LAN kan
+bruke ruterens hairpin NAT og bekrefter ikke mobilnettets forsinkelse.
 
 Reserver de to Pi-adressene i ruteren, slik at interne forbindelser ikke peker
 på feil enhet etter DHCP-endringer.
