@@ -32,10 +32,18 @@ ACME-kontoen og ruller konfigurasjonen tilbake ved feil. Sikkerhetskopien ved
 første vellykkede installasjon er
 `/var/backups/robotcar-edge/20261006T114212Z`.
 
-Under siste kontroll ble Pi 5 utilgjengelig fra arbeidsmaskinen, Pi 4 og edge.
-HTTPS svarer derfor **502** mens backend er borte. Sertifikat og nginx-oppsett
-er kontrollert, men en full innlogget video-/WSS-test gjennom domenet er **ikke
-bestått ennå**. Mulig tomt batteri er ikke fysisk bekreftet.
+Etter batteribyttet og gjenoppretting av programfilene på Pi 5 besto
+innlogging, begge videostrømmer og WebSocket test gjennom domenet. Testen
+gjennom proxyen ble kjørt fra LAN; denne ruten kan bruke hairpin NAT. Innloggingssiden
+er i tillegg bekreftet utenfra med 200-svar fra Østerrike, Spania og Sverige.
+Uinnlogget video og WebSocket ga 401 fra eksterne noder i Ungarn, Moldova,
+Nederland og Tyrkia. Ingen innloggingsinformasjon ble sendt til testtjenesten.
+Reell innlogget video- og styreforsinkelse fra mobilnett gjenstår å måle.
+
+Ved siste kontroll kl. 22:07 falt Pi 5 ut igjen, mens Pi 4 fortsatte å svare.
+SSH, HTTP og ping til Pi 5 feilet fra flere maskiner på LAN. Nettsiden kan
+ikke levere innlogging eller video mens Pi 5 er utilgjengelig; den tidligere
+beståtte testen må gjentas etter at forbindelsen er tilbake.
 
 Ikke videresend Pi 4 sin motorport 5001 eller Pi 5 sine interne sensorporter
 8800/8810 til Internett. Sensorportene lytter bare på 127.0.0.1. Ikke publiser
@@ -51,7 +59,7 @@ Etter DNS/proxy-oppsett skal følgende kontrolleres fra et eksternt nett:
    bevegelse med en person ved bilen.
 5. Bekreft at privat kamerafeed og rå motortjeneste ikke kan nås direkte.
 
-Når Pi 5 er tilbake, kan `python3 scripts/check_gateway.py` kontrollere
+`python3 scripts/check_gateway.py` kontrollerer
 innlogging, avvisning av uautorisert/feil-origin trafikk, begge videostrømmer
 og WebSocket-rundtur. Skriptet leser den lokale passordfilen, skriver bare
 måleverdier og sender ingen aktiverings- eller kjørekommandoer. Kjør det fra

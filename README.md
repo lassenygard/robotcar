@@ -8,8 +8,14 @@ Pi 4; kameraer, Hailo-8, LiDAR og kartlegging kjører på Pi 5.
 LiDAR-adapteren finnes, men sensoren svarer ikke. Full kartlegging, lokalisering
 og autonome turer er derfor **ikke fysisk godkjent**. De er implementert, testet
 med syntetiske data og sperret fra å kjøre før sensorer og kalibrering er i orden.
-DNS og HTTPS er nå satt opp. Pi 5 ble utilgjengelig på nettverket under siste
-verifisering, så innlogging/video via domenet venter på at den kommer tilbake.
+Etter batteribyttet ble skadde programfiler på Pi 5 gjenopprettet. Innlogging,
+begge videostrømmer og WebSocket besto test gjennom HTTPS-domenet. Eksterne
+kontroller fra flere land nådde innloggingssiden og avviste uinnlogget video/
+styring. Ved sluttkontrollen kl. 22:07 falt Pi 5 ut av nettverket igjen, mens
+Pi 4 fortsatt svarte; fjernkontrollen er utilgjengelig mens Pi 5 er borte.
+Begge Pi-er varsler fortsatt om lav spenning;
+strømforsyning og LiDAR-kabler trenger fysisk kontroll. Koden er committet
+lokalt; GitHub-publisering venter fortsatt på app-tilgang til riktig repo.
 
 ## Bruk
 
@@ -53,8 +59,10 @@ enkel, kort bufring; båndbredde og videoalder må måles på den endelige nettr
   late som hjulhastighet er målt odometri.
 - Et 30×30 m kart har celler på 5 cm og skiller ukjent, ledig og opptatt plass.
 - Kart lagres atomisk som komprimerte NPZ-filer med posisjonsreferanser og
-  visuelle landemerker. Siste aktive kart kan hentes etter omstart, men gammel
-  posisjon blir aldri godkjent som en ny måling.
+  visuelle landemerker. Skriving synkroniseres før det gamle kartet erstattes.
+  Siste aktive kart kan hentes etter omstart, men gammel posisjon blir aldri
+  godkjent som en ny måling. Skadet kart krever at operatøren velger et annet
+  kart eller starter et nytt; filen beholdes for gjenoppretting.
 - ORB-bildetrekk med geometrisk kontroll finner kjente utsyn; Hailo gir
   objektklasser. Visuelle treff foreslår posisjoner som må bekreftes av LiDAR.
   Generelle objektklasser alene identifiserer ikke et bestemt møbel eller rom.

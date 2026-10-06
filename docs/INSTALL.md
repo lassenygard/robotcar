@@ -111,3 +111,10 @@ mottatte bytes. Ingen annen prosess eide porten ved diagnostikken. Det er ennå
 ikke grunnlag for å kalle romskanning eller avstandsmåling fungerende.
 En ekstra kontroll med begge kameraer og AI stanset, redusert strømforbruk og
 tre sekunders motoroppstart ga også null bytes fra INFO/HEALTH ved 115200 baud.
+
+Etter at batteriet var ladet, ble [SLAMTECs offisielle SDK](https://github.com/Slamtec/rplidar_sdk)
+bygget på Pi 5. `ultra_simple` kunne åpne USB-porten, men `getDeviceInfo` ga
+`80008002` (`SL_RESULT_OPERATION_TIMEOUT`) ved 115200, 256000 og 460800 baud.
+Dette ble gjentatt med kameraer og AI stanset. Alle tjenester ble startet igjen
+etter prøven. Videre diagnostikk avhenger av fysisk kontroll av LiDAR-strøm og
+kabler; samme programvareprøver bør ikke gjentas uten en slik endring.
