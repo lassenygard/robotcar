@@ -39,11 +39,23 @@ Kjør `sudo bash deploy/install.sh motor` på Pi 4 og
 konfigurasjonen er opprettet. Skriptet kopierer kun runtime og servicefiler,
 og overskriver ikke private miljøfiler, modeller eller kart.
 
+Etter strømbruddet 2026-10-06 inneholdt den gamle Pi 5-installasjonen tomme filer
+og nullbytes. Oppdateringer legges derfor nå i en ny mappe under
+`/opt/robotcar/releases`. Alle filer kontrolleres med SHA-256 og skrives til
+lagringsmediet før `current` peker til den nye versjonen i én atomisk operasjon.
+Tjenestene kjører fra `/opt/robotcar/current`; tidligere versjoner beholdes.
+Dette reduserer risikoen for en halvskrevet oppdatering, men erstatter ikke
+stabil strømforsyning eller beskyttelse mot feil i selve lagringsmediet.
+
 ```bash
 systemctl status robotcar-motor                 # Pi 4
 systemctl status 'robotcar@*'                   # Pi 5
 journalctl -u robotcar-motor -n 30 --no-pager
 journalctl -u robotcar@lidar -n 30 --no-pager
+# Kontroller installerte filer uten å starte maskinvaren:
+python3 /opt/robotcar/current/deploy/release.py verify /opt/robotcar/current
+cd /opt/robotcar/current
+python3 -m unittest discover -s tests -v
 ```
 
 ## GPIO og mekanikk

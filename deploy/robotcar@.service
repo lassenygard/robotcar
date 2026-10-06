@@ -6,7 +6,7 @@ Wants=network-online.target
 [Service]
 User=pi
 Group=pi
-WorkingDirectory=/opt/robotcar
+WorkingDirectory=/opt/robotcar/current
 EnvironmentFile=/etc/robotcar/robotcar.env
 Environment=PYTHONUNBUFFERED=1
 Environment=LIBCAMERA_LOG_LEVELS=*:ERROR

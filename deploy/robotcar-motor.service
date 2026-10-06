@@ -5,7 +5,7 @@ After=network.target
 [Service]
 User=pi
 Group=pi
-WorkingDirectory=/opt/robotcar
+WorkingDirectory=/opt/robotcar/current
 EnvironmentFile=/etc/robotcar/robotcar.env
 Environment=PYTHONUNBUFFERED=1
 Environment=GPIOZERO_PIN_FACTORY=rpigpio
