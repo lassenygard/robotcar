@@ -46,7 +46,7 @@ def source_files(source):
             compile(data, relative, 'exec')
         result[relative] = data
     required = {'robotcar/'+name+'.py' for name in
-                ('__init__', 'common', 'motor', 'camera', 'lidar', 'vision', 'mapping', 'mapworker', 'navigation', 'webapp')}
+                ('__init__', 'common', 'motor', 'camera', 'lidar', 'lidarfeed', 'vision', 'mapping', 'mapworker', 'navigation', 'webapp')}
     if not required.issubset(result):
         raise ValueError('Release is missing required robotcar modules')
     return result

@@ -8,6 +8,7 @@ import os
 import signal
 import struct
 import time
+import uuid
 from .common import RUN, atomic_json
 
 
@@ -84,9 +85,16 @@ class RPLidar:
 
 
 def main():
+    remote = os.environ.get('LIDAR_REMOTE_URL')
+    if remote:
+        import asyncio
+        from .lidarfeed import collect
+        asyncio.run(collect(remote))
+        return
     port = os.environ.get('LIDAR_PORT', '/dev/serial/by-id/usb-Silicon_Labs_CP2102_USB_to_UART_Bridge_Controller_0001-if00-port0')
     offset = float(os.environ.get('LIDAR_OFFSET_DEG', '-105'))
     count = 0
+    source_id = uuid.uuid4().hex
     def terminate(*_):
         raise SystemExit(0)
     signal.signal(signal.SIGTERM, terminate)
@@ -101,11 +109,11 @@ def main():
                 count += 1
                 points = [[round(math.atan2(math.sin(-math.radians(a+offset)), math.cos(-math.radians(a+offset))), 5),
                            round(d, 4), q] for a, d, q in scan]
-                atomic_json(RUN / 'lidar.json', dict(seq=count, monotonic=now, time=time.time(),
+                atomic_json(RUN / 'lidar.json', dict(seq=count, source_id=source_id, monotonic=now, time=time.time(),
                     hz=round(1/max(.001, now-previous), 2), points=points, error=None))
                 previous = now
         except Exception as exc:
-            atomic_json(RUN / 'lidar.json', dict(seq=count, monotonic=time.monotonic(), time=time.time(),
+            atomic_json(RUN / 'lidar.json', dict(seq=count, source_id=source_id, monotonic=time.monotonic(), time=time.time(),
                 hz=0, points=[], error=str(exc)))
         finally:
             if device:

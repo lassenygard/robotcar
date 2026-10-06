@@ -9,7 +9,7 @@ install -d -m 755 /opt/robotcar
 install -d -o pi -g pi -m 700 /run/robotcar /var/lib/robotcar
 release_dir="$(python3 "$source_dir/deploy/release.py" stage "$source_dir")"
 if [ "$role" = motor ]; then
-    systemctl stop robotcar-motor
+    systemctl stop robotcar-motor robotcar@lidar robotcar@lidarfeed
 else
     systemctl stop robotcar@camera robotcar@vision robotcar@lidar robotcar@mapworker robotcar@webapp
 fi
@@ -28,6 +28,12 @@ systemctl daemon-reload
 if [ "$role" = motor ]; then
     systemctl enable robotcar-motor
     systemctl start robotcar-motor
+    if grep -qx 'LIDAR_FEED_ENABLED=1' /etc/robotcar/robotcar.env; then
+        systemctl enable robotcar@lidar robotcar@lidarfeed
+        systemctl start robotcar@lidar robotcar@lidarfeed
+    else
+        systemctl disable --now robotcar@lidar robotcar@lidarfeed
+    fi
 else
     systemctl enable robotcar@camera robotcar@vision robotcar@lidar robotcar@mapworker robotcar@webapp
     systemctl start robotcar@camera robotcar@vision robotcar@lidar robotcar@mapworker robotcar@webapp

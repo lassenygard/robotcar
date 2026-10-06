@@ -1,6 +1,7 @@
 [Unit]
 Description=Robotcar GPIO motor controller with independent deadman
 After=network.target
+ConditionPathExists=!/etc/robotcar/motors-inhibited
 
 [Service]
 User=pi
