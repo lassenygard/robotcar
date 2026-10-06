@@ -124,7 +124,7 @@ ikke en verifikasjon av batteridrift eller kontinuerlig drift gjennom natten.
 
 Fem foreslåtte kartmål omtrent 0,5 m fra bilen ble prøvd uten kjøresignaler.
 Planleggeren avviste dem: ukjent kartareal finnes ca. 0,206 m fra posisjonen,
-innenfor gjeldende sikkerhetsradius på 0,28 m. Nærmeste registrerte hindring
+innenfor gjeldende sikkerhetsradius på 0,32 m. Nærmeste registrerte hindring
 var ca. 0,85 m unna. Kartdekning, sensorplassering og faktisk bilgeometri må
 avklares før en rute fra denne posisjonen kan godkjennes.
 
