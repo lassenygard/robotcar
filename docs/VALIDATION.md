@@ -116,6 +116,18 @@ hjulkommandoer. Enhetstester dekker også frosne sekvensnumre, nettverksalder,
 feil forespørselsidentifikator, ugyldige målepunkter og avvisning uten token.
 Ved bytte av kart ryddes gamle visuelle treff og observasjonstider.
 
+Etter siste installasjon ga 30 påfølgende prøver ingen LiDAR-feil og målt
+posisjon i alle prøvene. Median var 7,1 skanninger/s, minst 106 returer per
+skanning, største målte alder 229 ms og median/maks. rundtur 15,8/20,0 ms.
+Begge kameraene produserte 20 fps. Denne prøven er en kort driftskontroll,
+ikke en verifikasjon av batteridrift eller kontinuerlig drift gjennom natten.
+
+Fem foreslåtte kartmål omtrent 0,5 m fra bilen ble prøvd uten kjøresignaler.
+Planleggeren avviste dem: ukjent kartareal finnes ca. 0,206 m fra posisjonen,
+innenfor gjeldende sikkerhetsradius på 0,28 m. Nærmeste registrerte hindring
+var ca. 0,85 m unna. Kartdekning, sensorplassering og faktisk bilgeometri må
+avklares før en rute fra denne posisjonen kan godkjennes.
+
 Det lagrede kartet dekker bare synlige deler av rommet fra ett sted.
 Gjenlokalisering er bekreftet fra samme sted og retning, ikke etter flytting
 eller en fysisk rotasjon. LiDAR-vinkel −105 grader er fremdeles ikke kalibrert.
@@ -126,6 +138,11 @@ WebSocket og `localized=true`. Median rundtur var 25,3 ms (maks. 60,9 ms).
 Samtidig videomottak var 13,2/6,3 fps foran/bak, mens begge kameraprosessene
 fortsatt produserte ca. 20 fps. Dette ble målt via domenet fra LAN; verken
 videoalder eller faktisk kjøring fra mobilnett er bekreftet av prøven.
+
+Den separate HTTPS-verten var midlertidig utilgjengelig under sluttkontrollen
+og startet på nytt omkring kl. 00:47. Nginx kom tilbake med gyldig
+konfigurasjon. Ingen omstart av denne verten ble bestilt av robotcar-arbeidet;
+årsaken er ikke fastslått. Selve robot-Pi-ene fortsatte å levere sensordata.
 
 Kameraenes faktiske bilder er kontrollert privat. Oppdatert gjenoppkobling i
 nettleseren er syntakskontrollert, men ikke visuelt prøvd på nytt: nettleser-
