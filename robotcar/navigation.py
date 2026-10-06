@@ -5,7 +5,7 @@ import os
 import socket
 import time
 from .common import DATA, RUN, atomic_json, read_json, secret
-from .mapping import wrap
+from .mapping import wrap, scan_points, align_scan
 
 
 class MotorClient:
@@ -155,7 +155,9 @@ class Navigator:
                 if mode == 'goto':
                     await self.goto(message['goal'])
                 elif mode == 'scan':
-                    for _ in range(40):
+                    previous = scan_points(read_json(RUN/'lidar.json').get('points', []))
+                    rotation = 0.0
+                    for _ in range(160):
                         try:
                             result = await self.map_call({'action':'relocalize'})
                             if result.get('localized'):
@@ -163,7 +165,18 @@ class Navigator:
                         except ValueError:
                             pass
                         await self.pulse(-.23, .23, .15)
-                    raise ValueError('Fant ingen entydig kartposisjon under rotasjon.')
+                        current = scan_points(read_json(RUN/'lidar.json').get('points', []))
+                        delta, quality = await asyncio.to_thread(align_scan, current, previous)
+                        if quality < .65:
+                            raise ValueError('Kan ikke måle rotasjonen sikkert; stoppet.')
+                        rotation += abs(float(delta[2]))
+                        previous = current
+                        if rotation >= 2*math.pi:
+                            result = await self.map_call({'action':'relocalize'})
+                            if result.get('localized'):
+                                return
+                            break
+                    raise ValueError('Fant ingen entydig kartposisjon under den målte rotasjonen.')
                 elif mode == 'explore':
                     for _ in range(100):
                         options = (await self.map_call({'action':'frontiers'}))['targets']

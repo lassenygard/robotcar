@@ -97,3 +97,5 @@ GET_INFO er forsøkt ved 115200, 256000 og 460800 baud. Reset er forsøkt ved
 USB-adapteren er tilbakestilt. Alle forsøk ga null
 mottatte bytes. Ingen annen prosess eide porten ved diagnostikken. Det er ennå
 ikke grunnlag for å kalle romskanning eller avstandsmåling fungerende.
+En ekstra kontroll med begge kameraer og AI stanset, redusert strømforbruk og
+tre sekunders motoroppstart ga også null bytes fra INFO/HEALTH ved 115200 baud.

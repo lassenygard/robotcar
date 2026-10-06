@@ -31,7 +31,7 @@ bildetrekk; ingen kamerabilder er lagt i det offentlige repoet.
 
 ## Automatiske tester
 
-Kjør `python3 -m unittest discover -s tests -v`.
+19 tester består med `python3 -m unittest discover -s tests -v`.
 
 Testene dekker blant annet tapt heartbeat, uforlengbar bevegelsesgrense,
 pause før ny aktivering, kommando-replay, ikke-endelige tall, sperret autonomi,
@@ -53,6 +53,7 @@ posisjonshypotese bekreftet av LiDAR, tvetydige romretninger og hindringsstopp.
    ekstern video-/styringslatens kan ikke godkjennes før ruten er opprettet.
 5. **GitHub-publisering:** repository finnes og kan leses, men forsøk på å
    opprette arbeidsgrenen via GitHub-koblingen ga 403, «Resource not accessible
-   by integration». Ingen vellykket push er derfor dokumentert ennå.
+   by integration». Installasjonslisten mangler appinstallasjon for
+   `lassenygard`, som eier repoet. Ingen vellykket push er derfor dokumentert ennå.
 
 Programvaretestene erstatter ikke disse fysiske og eksterne kontrollene.
