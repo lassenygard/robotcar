@@ -60,6 +60,7 @@ class Mapper:
         self.last_keyframe = time.monotonic()
 
     def recognise(self):
+        self.landmark_matches = []
         points, descriptors = self.features()
         if descriptors is None or len(descriptors) < 12:
             return []
@@ -148,7 +149,7 @@ class Mapper:
                 else:
                     self.map = OccupancyMap.load(path)
                     self.load_error = None
-                    self.last_scan = 0.0
+                    self.reset_observations()
                     self.error = 'Map loaded; localisation required'
                 atomic_json(DATA/'active_map.json', {'name':name})
             elif action == 'new':
@@ -156,6 +157,7 @@ class Mapper:
                     self.map.save(DATA/'maps'/('backup-'+time.strftime('%Y%m%d-%H%M%S')+'.npz'))
                 self.map = OccupancyMap()
                 self.load_error = None
+                self.reset_observations()
                 self.error = 'Waiting for valid LiDAR scans'
                 atomic_json(DATA/'active_map.json', {'name':''})
                 self.last_sequence = -1
@@ -182,6 +184,15 @@ class Mapper:
             else:
                 raise ValueError('Unknown map action')
             return self.status()
+
+    def reset_observations(self):
+        """Matches and live timestamps belong to the map that produced them."""
+        self.last_scan = 0.0
+        self.last_sequence = -1
+        self.last_keyframe = 0.0
+        self.last_relocalize = 0.0
+        self.last_save = time.monotonic()
+        self.landmark_matches = []
 
 
 def main():

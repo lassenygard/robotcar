@@ -7,7 +7,8 @@ Bruk systemets Python og Picamera2/libcamera/Hailo-pakker. Ikke erstatt NumPy
 eller kamera-/Hailo-bibliotekene med tilfeldige pip-versjoner: de inneholder
 native koblinger til den installerte driveren.
 
-Pi 4 trenger `python3-gpiozero` og `python3-rpi.gpio`. Pi 5 trenger
+Pi 4 trenger `python3-gpiozero`, `python3-rpi.gpio`, `python3-serial` og
+`python3-aiohttp`. Pi 5 trenger
 `python3-picamera2`, `python3-opencv`, `python3-numpy`, `python3-scipy`,
 `python3-serial`, `python3-aiohttp` og den fungerende HailoRT-installasjonen.
 Det målte Hailo-8-oppsettet bruker firmware/runtime 4.20.0.
@@ -39,6 +40,22 @@ Kjør `sudo bash deploy/install.sh motor` på Pi 4 og
 konfigurasjonen er opprettet. Skriptet kopierer kun runtime og servicefiler,
 og overskriver ikke private miljøfiler, modeller eller kart.
 
+LiDAR-ens USB-kabel skal nå stå i Pi 4. Sett disse feltene i den private
+konfigurasjonen på Pi 4 før installasjon:
+
+```ini
+LIDAR_FEED_ENABLED=1
+LIDAR_FEED_BIND=192.168.4.43
+LIDAR_FEED_PORT=8801
+LIDAR_OFFSET_DEG=-105
+```
+
+Pi 4 skal ikke ha `LIDAR_REMOTE_URL`. På Pi 5 settes
+`LIDAR_REMOTE_URL=http://192.168.4.43:8801` og `LIDAR_FEED_ENABLED=0`.
+Samme interne token brukes på begge. Motorinstallasjonen starter også
+`robotcar@lidar` og `robotcar@lidarfeed` når feed-flagget er 1.
+Kartbehandlingen forblir på Pi 5; Pi 4 gjør bare innlesing og videresending.
+
 Etter strømbruddet 2026-10-06 inneholdt den gamle Pi 5-installasjonen tomme filer
 og nullbytes. Oppdateringer legges derfor nå i en ny mappe under
 `/opt/robotcar/releases`. Alle filer kontrolleres med SHA-256 og skrives til
@@ -59,6 +76,12 @@ python3 -m unittest discover -s tests -v
 ```
 
 ## GPIO og mekanikk
+
+**Gjeldende driftsform:** motorene er sperret mens bilen står i strømkabler.
+`/etc/robotcar/motors-inhibited` hindrer at `robotcar-motor.service` starter,
+også ved omstart eller ny installasjon. Pi 4 har i tillegg en tilsvarende
+systemd-drop-in fra overgangen til vanlig strøm. Sperren skal stå til brukeren
+bekrefter at bilen er løs fra kablene og klar for nye fysiske prøver.
 
 Utgangene er BCM-numre fra de tidligere skriptene:
 
@@ -104,17 +127,51 @@ montert eller verifisert av denne endringen.
 
 Porten er CP2102, USB-ID `10c4:ea60`, stabil sti
 `/dev/serial/by-id/usb-Silicon_Labs_CP2102_USB_to_UART_Bridge_Controller_0001-if00-port0`.
-GET_INFO er forsøkt ved 115200, 256000 og 460800 baud. Reset er forsøkt ved
-115200/256000 og GET_HEALTH ved 115200. DTR er testet begge veier, og
-USB-adapteren er tilbakestilt. Alle forsøk ga null
-mottatte bytes. Ingen annen prosess eide porten ved diagnostikken. Det er ennå
-ikke grunnlag for å kalle romskanning eller avstandsmåling fungerende.
-En ekstra kontroll med begge kameraer og AI stanset, redusert strømforbruk og
-tre sekunders motoroppstart ga også null bytes fra INFO/HEALTH ved 115200 baud.
+På batteri ga seriell lesing, installert Adafruit RPLidar 0.0.1, nyere
+Adafruit-kilde og [SLAMTECs SDK](https://github.com/Slamtec/rplidar_sdk)
+ingen stabile svar. 115200, 256000 og 460800 baud, DTR begge veier, reset,
+USB-omstart og redusert kamera/AI-last ble forsøkt uten brukbare skanninger.
 
-Etter at batteriet var ladet, ble [SLAMTECs offisielle SDK](https://github.com/Slamtec/rplidar_sdk)
-bygget på Pi 5. `ultra_simple` kunne åpne USB-porten, men `getDeviceInfo` ga
-`80008002` (`SL_RESULT_OPERATION_TIMEOUT`) ved 115200, 256000 og 460800 baud.
-Dette ble gjentatt med kameraer og AI stanset. Alle tjenester ble startet igjen
-etter prøven. Videre diagnostikk avhenger av fysisk kontroll av LiDAR-strøm og
-kabler; samme programvareprøver bør ikke gjentas uten en slik endring.
+På vanlig strømforsyning ble Pi 5 målt til ca. 5,00 V og `throttled=0x0`.
+Seriell lesing var fortsatt ustabil. Direkte USB-lesing uten cp210x-driveren
+ga normal helsestatus og 12 105 gyldige returer over 98 komplette omdreininger.
+Etter flytting av samme USB-kabel til Pi 4 fungerte vanlig 115200-baud-lesing:
+normal helsestatus, 11 880 returer og 97 komplette omdreininger på 15 sekunder.
+Produksjonsleseren kjører derfor på Pi 4 med vanlig SCAN og obligatorisk
+helsekontroll. Den direkte USB-prøven er ikke en avhengighet i driften.
+
+Pi 5 viste gjentatt `cp210x ... failed set request 0x12 status: -110`.
+Forespørsel 0x12 er tømming av UART-buffer ved lukking av porten. Dette er
+ikke i seg selv bevis på at alle USB-innstillinger eller adapteren er ødelagt.
+Tilsvarende feil er ikke observert på Pi 4 etter flyttingen. Den nøyaktige
+årsaken i Pi 5-forbindelsen er ikke fastslått.
+
+`scripts/probe_lidar.py` tester bare serieporten og LiDAR-ens egen rotasjon;
+det importerer ikke hjulstyringen. Stopp `robotcar@lidar` før bruk og start
+tjenesten igjen etterpå. Eksempel fra repoets rot:
+
+```bash
+python3 scripts/probe_lidar.py --command health --seconds 3
+python3 scripts/probe_lidar.py --command scan --seconds 15
+```
+
+`--command force-scan` er kun diagnostikk. En skannedeskriptor eller pakker
+med null avstand regnes ikke som brukbare omdreininger. Eventuelle råopptak
+med `--save-raw` skal lagres privat utenfor repoet.
+
+## Batteritid og vanlig strøm
+
+Ingen batterimåler for Bosch-batteriet er funnet. Pi 5 sin EXT5V-verdi er
+5 V-forsyningen, og BATT_V gjelder RTC; ingen av dem gir batteriets ladetilstand.
+Den tidligere femtimersfristen ble deaktivert på begge Pi-er før overgang
+til vanlig strøm. Begge skal derfor forbli på nå.
+
+`sudo bash deploy/schedule-shutdown.sh '<felles UTC-frist>'` kan sette en ny
+engangsfrist på begge maskiner ved senere batteridrift. Bruk samme frist på
+begge. Timeren er vedvarende: omstart etter fristen gir avslåing hvis timeren
+fortsatt er aktiv. På vanlig strøm deaktiveres den med
+`sudo systemctl disable --now robotcar-battery-shutdown.timer`.
+
+På batteriforsyningen ble ca. 4,72–4,80 V og undervoltingsvarsler målt, også
+etter lading. Batteriets spenningsomformer og kabler må utbedres/kontrolleres
+under last før dette kan brukes som stabil mobil strømforsyning.

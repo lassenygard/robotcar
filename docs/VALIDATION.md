@@ -1,4 +1,4 @@
-# Verifikasjon 2026-10-06
+# Verifikasjon 2026-10-07
 
 ## Testet på fysisk bil
 
@@ -15,8 +15,12 @@
 | Web | Desktop 1440 px og mobil 390 px; levende video begge veier, ingen JavaScript-feil, ingen horisontal overflow |
 | Tilgang | Uinnlogget video/kart/WS gir 401, annen Origin på WS gir 403, kartsti med `../` avvises |
 | Autonomi | Forespørsel om automatisk kartlegging avvises i gjeldende testmodus |
+| LiDAR | USB på Pi 4, vanlig SCAN ved 115200 baud, ca. 7 omdreininger/s |
+| Forsyning | Begge på vanlig strøm, `throttled=0x0`; Pi 5 ca. 5,00 V |
+| Motorsperre | Motortjenesten er inaktiv og kan ikke starte mens sperrefilen finnes |
 
-Totalt åtte fysiske pulser à 0,18 s ble sendt, adskilt av reelle stopp og pauser.
+Før overgangen til vanlig strøm ble totalt åtte fysiske pulser à 0,18 s sendt,
+adskilt av reelle stopp og pauser. Ingen hjulpulser er sendt under kabeltilkobling.
 Det er ikke gjennomført langvarig kjøring. Ingen tur eller vaktrunde står aktiv.
 Motorretningene er korrigert ved bytting av sidegrupper og invertering av de
 tidligere `*_right`-utgangene. Bildemålingene etter korreksjon viste:
@@ -31,9 +35,10 @@ bildetrekk; ingen kamerabilder er lagt i det offentlige repoet.
 
 ## Automatiske tester
 
-32 tester består lokalt, på Pi 4 og på Pi 5 med
-`python3 -m unittest discover -s tests -v`. Hele testsettet ble kjørt før
-installasjon av versjon `7ed2d7482842970a07fdd05fd0ee7dc473a7518f` på begge Pi-er.
+42 tester dekker gjeldende kildekode med
+`python3 -m unittest discover -s tests -v`. Testene kjøres lokalt og på hver Pi
+før en ny versjon aktiveres. Installert kildeversjon står i
+`/opt/robotcar/current/REVISION`; alle installerte filer har kontrollsummer.
 
 Testene dekker blant annet tapt heartbeat, uforlengbar bevegelsesgrense,
 pause før ny aktivering, kommando-replay, ikke-endelige tall, sperret autonomi,
@@ -70,7 +75,7 @@ intakte; modellens SHA-256 er kontrollert mot den opprinnelige verdien.
 Tjenestene kjører nå fra versjonerte mapper under `/opt/robotcar/releases` med
 kontrollsum-manifest og atomisk bytte av `/opt/robotcar/current`. Begge Pi-er
 har samme runtime-versjon og bestått manifestkontroll. Kameraer, AI, kart- og
-webtjeneste kjører igjen; LiDAR-tjenesten melder fortsatt sensorfeil.
+webtjeneste ble gjenopprettet. LiDAR virker nå etter flytting av USB til Pi 4.
 Ingen nye kjørepulser er sendt etter batteribyttet.
 
 `scripts/check_gateway.py` har bekreftet innlogging, gyldige JPEG-bilder fra
@@ -82,13 +87,45 @@ Sverige: alle svarte 200. Separate kontroller uten innlogging ga 401 på video
 og WebSocket fra fire andre eksterne noder. Eksterne testtjenester har aldri
 fått innloggingsinformasjon eller kamerabilder.
 
-**Siste tilgjengelighet, kl. 22:07 lokal tid:** Pi 5 ble igjen utilgjengelig
-etter at installasjonen og manifestkontrollen av `7ed2d74` var fullført.
-Den påfølgende gjennomgangen av video stoppet med timeout. SSH og port 8080
-ga timeout fra arbeidsmaskinen; ping feilet også fra Pi 4 og edge. Pi 4 var
-fortsatt tilgjengelig med aktiv motortjeneste og `throttled=0x50005`. Dette
-bekrefter et nytt bortfall av Pi 5, men fastslår ikke årsaken. Den tidligere
-beståtte videotesten er derfor ikke dokumentasjon på stabil drift over tid.
+**Gjeldende tilgjengelighet:** etter overgang til vanlig strøm natt til 7. oktober
+svarer begge Pi-er og viser `throttled=0x0`. Den gamle batterifristen er
+kontrollert deaktivert på begge. Motorsperren er vedvarende gjennom omstart
+og installasjon. Ingen automatisk kjøretur er aktiv.
+
+## LiDAR og kart med bilen stillestående
+
+Pi 5 sin serielle USB-forbindelse var fortsatt ustabil med normal forsyning.
+En direkte USB-prøve ga 98 komplette omdreininger og 12 105 gyldige avstander.
+Etter at brukeren flyttet USB-kabelen til Pi 4, ga ordinær seriell lesing
+97 komplette omdreininger med minst 60 returer hver, totalt 11 880 gyldige
+avstander fra 0,818 til 5,234 m på 15 sekunder. Helsekoden var 0 (normal).
+Pi 4 leser nå kontinuerlig; Pi 5 mottar rundt 7 skanninger/s. En observert
+rundtur for skanneforespørselen var 11,7 ms, målingsalder ca. 0,1–0,2 s.
+
+Kartet `stue-stasjonar-20261007` ble bygget fra den faste plasseringen, lagret
+og lastet inn igjen. Gammel posisjon var først uttrykkelig ukjent. Deretter
+fant LiDAR og kameratrekk posisjonen igjen: den navngitte referansen
+«Kjøkkenøyen sett fra stuegulvet» hadde 179 geometrisk konsistente bildetrekk,
+og LiDAR-matching ga ca. 0,975 i implementasjonens treffandel. Dette er en
+matchingverdi, ikke en kalibrert sannsynlighet for korrekt posisjon.
+
+En kontrollert stans av `robotcar@lidarfeed` på Pi 4 ga tom skanning med
+feilmelding på Pi 5 og `localized=false`. Da feeden startet igjen, kom ferske
+skanninger tilbake og posisjonen ble målt på nytt. Testen brukte ingen
+hjulkommandoer. Enhetstester dekker også frosne sekvensnumre, nettverksalder,
+feil forespørselsidentifikator, ugyldige målepunkter og avvisning uten token.
+Ved bytte av kart ryddes gamle visuelle treff og observasjonstider.
+
+Det lagrede kartet dekker bare synlige deler av rommet fra ett sted.
+Gjenlokalisering er bekreftet fra samme sted og retning, ikke etter flytting
+eller en fysisk rotasjon. LiDAR-vinkel −105 grader er fremdeles ikke kalibrert.
+Ingen kamerabilder, rå skannedata eller leilighetskart legges i GitHub.
+
+Ny HTTPS-kontroll med fungerende LiDAR ga innlogging, begge videostrømmer,
+WebSocket og `localized=true`. Median rundtur var 25,3 ms (maks. 60,9 ms).
+Samtidig videomottak var 13,2/6,3 fps foran/bak, mens begge kameraprosessene
+fortsatt produserte ca. 20 fps. Dette ble målt via domenet fra LAN; verken
+videoalder eller faktisk kjøring fra mobilnett er bekreftet av prøven.
 
 Kameraenes faktiske bilder er kontrollert privat. Oppdatert gjenoppkobling i
 nettleseren er syntakskontrollert, men ikke visuelt prøvd på nytt: nettleser-
@@ -97,27 +134,23 @@ mobilkontrollen i tabellen gjelder grensesnittet før denne endringen.
 
 ## Ikke ferdig verifisert
 
-1. **RPLiDAR:** USB-adapteren finnes, men sensoren returnerer ingen bytes. Derfor
-   finnes ikke et nytt, faktisk leilighetskart fra denne installasjonen.
-   Etter lading ble dette også bekreftet med SLAMTECs offisielle SDK 2.1.0:
-   `getDeviceInfo` ga `80008002` (timeout) ved 115200, 256000 og 460800 baud,
-   også med kameraer og AI midlertidig stanset. USB-porten kan åpnes.
-2. **Autonomi:** go-to, utforsking, gjenlokalisering i leiligheten og vaktrunder
-   er implementert, men ikke kjørt fysisk. Begge motor-/navigasjonsflagger
-   forblir av. LiDAR-offset og sikkerhetsradius gjenstår å kalibrere.
-3. **Strøm:** begge Pi-er rapporterte `throttled=0x50005` etter at batteriet var
-   ladet: aktiv lav spenning og struping samt historiske hendelser. Pi 5 vekslet
-   mellom dette og `0x50000`. Kernel-loggen viser gjentatte spenningsfall i
-   gjeldende oppstart. Lading har derfor ikke løst den målte forsyningsfeilen;
-   spenningsomformer, kabler og forsyning under last må kontrolleres.
+1. **Geometri og full kartlegging:** LiDAR-vinkel, bilens sikkerhetsradius og
+   eventuelle faste skygger må kalibreres. Kartet fra én plassering er ikke
+   et kart over hele leiligheten. Avstander må sammenlignes med fysiske mål.
+2. **Autonomi:** go-to, utforsking, gjenlokalisering etter flytting/rotasjon og
+   vaktrunder er implementert, men ikke kjørt fysisk. Begge autonomiflagg og
+   kalibreringsflagget forblir av. Motorene er i tillegg sperret under kabling.
+3. **Batteriforsyning:** vanlig strøm gir nå normal Pi-forsyning. Tidligere
+   batteridrift ga aktiv lav spenning og struping; Pi 5 målte ca. 4,72–4,80 V,
+   avhengig av last. Omformer, kabler og forsyning under last må kontrolleres
+   før stabil mobil drift kan bekreftes. Ingen batteriprosent er tilgjengelig.
 4. **Ekstern kjøring:** HTTPS og innloggingssiden er bekreftet utenfra.
-   Innlogget video og WebSocket er bekreftet via domenet fra LAN. Faktisk
+   Innlogget video, WebSocket og kart er bekreftet via domenet fra LAN. Faktisk
    videoalder og styreforsinkelse fra mobilnett gjenstår å måle; kjøring og
-   stopp ved nettbrudd må prøves med person ved bilen. Pi 5 må tilbake og
-   forbindelsen må holde seg stabil før dette kan fullføres.
+   stopp ved nettbrudd må prøves med person ved bilen og uten strømkabler.
 5. **GitHub-publisering:** repository finnes og kan leses, men forsøk på å
    opprette arbeidsgrenen via GitHub-koblingen ga 403, «Resource not accessible
    by integration». Installasjonslisten mangler appinstallasjon for
-   `lassenygard`, som eier repoet. Ingen vellykket push er derfor dokumentert ennå.
+   `lassenygard`, som eier repoet. Ingen vellykket push er dokumentert ennå.
 
 Programvaretestene erstatter ikke disse fysiske og eksterne kontrollene.

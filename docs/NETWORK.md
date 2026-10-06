@@ -19,6 +19,7 @@ Den installerte ruten er:
 Nettleser -- HTTPS/WSS --> eksisterende edge/reverse proxy
                            -- privat LAN --> 192.168.4.44:8080
                                               -- token --> 192.168.4.43:5001
+                                              <-- token -- 192.168.4.43:8801/scan
 ```
 
 HTTP omdirigeres til HTTPS. WebSocket-oppgradering er satt opp, og proxybuffering
@@ -40,12 +41,24 @@ Uinnlogget video og WebSocket ga 401 fra eksterne noder i Ungarn, Moldova,
 Nederland og Tyrkia. Ingen innloggingsinformasjon ble sendt til testtjenesten.
 Reell innlogget video- og styreforsinkelse fra mobilnett gjenstår å måle.
 
-Ved siste kontroll kl. 22:07 falt Pi 5 ut igjen, mens Pi 4 fortsatte å svare.
-SSH, HTTP og ping til Pi 5 feilet fra flere maskiner på LAN. Nettsiden kan
-ikke levere innlogging eller video mens Pi 5 er utilgjengelig; den tidligere
-beståtte testen må gjentas etter at forbindelsen er tilbake.
+Etter overgang til vanlig strømforsyning 2026-10-07 er begge Pi-er tilbake.
+Innlogging, video, WebSocket, ekte LiDAR-data og kartposisjon er kontrollert
+gjennom domenet fra LAN. Målt median WebSocket-rundtur var 25,3 ms, maks. 60,9 ms.
+Samtidig mottak av begge videostrømmer ga 13,2 og 6,3 fps i denne prøven;
+kameraprosessene produserte fortsatt ca. 20 fps. Dette skiller faktisk mottak
+gjennom nettverket fra kameraenes opptaksrate. Videoalder er ennå ikke målt.
 
-Ikke videresend Pi 4 sin motorport 5001 eller Pi 5 sine interne sensorporter
+LiDAR-ens USB-kabel står i Pi 4. En egen HTTP-tjeneste på privat port 8801
+krever `ROBOTCAR_TOKEN`; uautorisert forespørsel er kontrollert og gir 401.
+Pi 5 henter siste skanning med en ny forespørselsidentifikator og avviser feil
+svar, gamle sekvensnumre og målinger eldre enn 650 ms inklusive rundtur.
+En kontrollert stans av denne tjenesten gjorde kartposisjonen ukjent; oppstart
+ga ferske skanninger og målt gjenlokalisering igjen.
+
+Motortjenesten er med hensikt stoppet og sperret mens bilen står i strømkabler.
+Nettsiden viser derfor motorforbindelsen som frakoblet i denne driftsformen.
+
+Ikke videresend Pi 4 sine porter 5001/8801 eller Pi 5 sine interne sensorporter
 8800/8810 til Internett. Sensorportene lytter bare på 127.0.0.1. Ikke publiser
 8080 som ukryptert erstatning for HTTPS; kamera og kontroll krever kryptert
 innlogging når trafikken går utenfor lokalnettet.

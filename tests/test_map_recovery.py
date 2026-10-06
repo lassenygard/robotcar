@@ -8,6 +8,25 @@ from robotcar.mapworker import Mapper
 
 
 class MapRecoveryTests(unittest.TestCase):
+    def test_replacing_map_clears_old_visual_matches_and_live_scan(self):
+        with tempfile.TemporaryDirectory() as directory, patch('robotcar.mapworker.DATA', Path(directory)):
+            mapper = Mapper()
+            for action in ({'action': 'new'}, {'action': 'load', 'name': 'saved'}):
+                mapper.map.save(Path(directory)/'maps'/'saved.npz')
+                mapper.landmark_matches = [{'name': 'previous room'}]
+                mapper.last_scan, mapper.last_sequence = 500, 20
+                mapper.last_relocalize = 500
+                mapper.action(action)
+                self.assertEqual(mapper.status()['recognised'], [])
+                self.assertEqual(mapper.last_scan, 0)
+                self.assertEqual(mapper.last_sequence, -1)
+                self.assertEqual(mapper.last_relocalize, 0)
+                self.assertFalse(mapper.status()['localized'])
+            mapper.landmark_matches = [{'name': 'old view'}]
+            with patch.object(mapper, 'features', return_value=([], None)):
+                self.assertEqual(mapper.recognise(), [])
+            self.assertEqual(mapper.status()['recognised'], [])
+
     def test_corrupt_active_map_requires_explicit_recovery(self):
         with tempfile.TemporaryDirectory() as directory:
             data = Path(directory)

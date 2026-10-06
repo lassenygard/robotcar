@@ -2,26 +2,30 @@
 
 Robotcar har et innlogget kontrollpanel med to kameravisninger, rask manuell
 styring, kartvisning og navigasjonskontroller. Motorstyring kjører isolert på
-Pi 4; kameraer, Hailo-8, LiDAR og kartlegging kjører på Pi 5.
+Pi 4 sammen med en separat LiDAR-leser; kameraer, Hailo-8 og kartlegging kjører på Pi 5.
 
-**Status 2026-10-06:** kameraer og korte motorkommandoer er testet på bilen.
-LiDAR-adapteren finnes, men sensoren svarer ikke. Full kartlegging, lokalisering
-og autonome turer er derfor **ikke fysisk godkjent**. De er implementert, testet
-med syntetiske data og sperret fra å kjøre før sensorer og kalibrering er i orden.
-Etter batteribyttet ble skadde programfiler på Pi 5 gjenopprettet. Innlogging,
-begge videostrømmer og WebSocket besto test gjennom HTTPS-domenet. Eksterne
-kontroller fra flere land nådde innloggingssiden og avviste uinnlogget video/
-styring. Ved sluttkontrollen kl. 22:07 falt Pi 5 ut av nettverket igjen, mens
-Pi 4 fortsatt svarte; fjernkontrollen er utilgjengelig mens Pi 5 er borte.
-Begge Pi-er varsler fortsatt om lav spenning;
-strømforsyning og LiDAR-kabler trenger fysisk kontroll. Koden er committet
-lokalt; GitHub-publisering venter fortsatt på app-tilgang til riktig repo.
+**Status 2026-10-07:** RPLiDAR fungerer med vanlig seriell lesing etter at
+USB-kabelen ble flyttet til Pi 4. Omtrent 7 skanninger/s sendes til Pi 5.
+Et kart fra bilens stillestående plassering er lagret og lastet inn igjen;
+LiDAR og kameratrekk har bekreftet posisjonen i dette kartet. Kameraene leverer
+ca. 20 fps lokalt. Innlogging, video, LiDAR og posisjon er kontrollert gjennom
+HTTPS-domenet fra LAN; full innlogget ytelse fra mobilnett gjenstår.
+
+Begge Pi-er kjører nå på vanlig strømforsyning uten registrert lav spenning
+i denne oppstarten. **Motorene er sperret fordi bilen er tilkoblet kabler.**
+Den tidligere batteritimeren er deaktivert. Full leilighetskartlegging,
+rotasjon for gjenkjenning, go-to og vaktrunder gjenstår å prøve fysisk etter
+kalibrering og frakobling av kablene. Koden er committet lokalt;
+GitHub-publisering venter fortsatt på app-tilgang til riktig repo.
 
 ## Bruk
 
 - Lokalt kontrollpanel: `http://192.168.4.44:8080`.
 - Ekstern adresse: `https://robotcar.nygardene.no` — krever at Pi 5 er på nett.
 - Innlogging ligger i `/home/pi/.ssh/robotcar-web-login.conf` på arbeidsmaskinen.
+- Kartet `stue-stasjonar-20261007` viser det som er målt fra den nåværende
+  plasseringen; det er ikke et ferdig kart over hele leiligheten.
+- Under kabeltilkobling er motortjenesten sperret uavhengig av knappene nedenfor.
 - Trykk **Aktiver motorer**, og hold en pil eller W/A/S/D. Slipp for å stoppe.
 - Mellomrom og den røde **STOPP**-knappen stopper kjøring og navigasjon.
 - Maksimal sammenhengende bevegelse er **2,5 sekunder**, også ved gjentatte
@@ -38,14 +42,18 @@ Ingen automatisk tur starter ved oppstart eller etter nettverksbrudd.
 
 | Enhet | Oppgaver | Tjenester |
 |---|---|---|
-| Pi 4, `192.168.4.43` | GPIO, motorpolariteter, tidsgrense og stopp ved nettverksbrudd | `robotcar-motor` |
-| Pi 5, `192.168.4.44` | To CSI-kameraer, Hailo-8, RPLiDAR, kartmatching og webkontroll | `robotcar@camera`, `@vision`, `@lidar`, `@mapworker`, `@webapp` |
+| Pi 4, `192.168.4.43` | USB-LiDAR og skanneoverføring; separat GPIO-prosess med tidsgrense/stopp | `robotcar@lidar`, `@lidarfeed`, `robotcar-motor` (sperret) |
+| Pi 5, `192.168.4.44` | To CSI-kameraer, Hailo-8, mottak av LiDAR, kartmatching og webkontroll | `robotcar@camera`, `@vision`, `@lidar`, `@mapworker`, `@webapp` |
 | Eksisterende edge, `192.168.4.58` | HTTPS og videresending av video/WebSocket til Pi 5 | nginx, certbot |
 
 Kontrollkommandoer går over en egen WebSocket og en autentisert TCP-forbindelse
 til motor-Pi-en. JPEG-bilder kodes én gang og siste bilde deles mellom seerne;
 gamle bilder legges ikke i en applikasjonskø. Kartbehandling og AI kjører i egne
 prosesser og kan ikke blokkere motorenes stopptråd.
+LiDAR-overføringen krever det interne tokenet og henter bare siste skanning.
+Målingens alder inkluderer hele nettverksrundturen; gjentatte, gamle eller
+ugyldige svar blir ikke godkjent som nye målinger. Ved forbindelsesbrudd
+blir posisjonen ukjent.
 
 Lokalt ble begge kameraene målt til omtrent **20 fps**, nettleserens rundtur til
 **17–33 ms**, og Hailo-inferens til omtrent **30 ms**. Dette er lokalnett-målinger,
