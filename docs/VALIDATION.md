@@ -35,7 +35,7 @@ bildetrekk; ingen kamerabilder er lagt i det offentlige repoet.
 
 ## Automatiske tester
 
-56 tester dekker gjeldende kildekode med
+59 tester dekker gjeldende kildekode med
 `python3 -m unittest discover -s tests -v`. Testene kjøres lokalt og på hver Pi
 før en ny versjon aktiveres. Installert kildeversjon står i
 `/opt/robotcar/current/REVISION`; alle installerte filer har kontrollsummer.
@@ -196,6 +196,14 @@ etter fysisk flytting. Motorene var sperret, autonomi og kalibreringsflagg
 var av, begge batteritimere var deaktivert og begge Pi-er viste `throttled=0x0`.
 
 ## Ikke ferdig verifisert
+
+Automatisk utforsking slår nå på oppdatering av et innlastet kart før den
+velger mål. Den kontrollerer også klaringen ved startposisjonen når listen
+med utforskningsmål er tom. Hvis alle gjenværende mål mangler sikker rute,
+lagres delkartet og kjøringen avsluttes med forklaring. Dette behandles ikke
+som ferdig kartlegging. Kartet beholder navnet sitt; nye kart får et eget
+tidsstemplet navn i stedet for å overskrive `apartment` automatisk.
+Tre nye tester dekker disse forløpene med simulerte turer, uten motorbruk.
 
 Videogatewayen henter nå et nytt stillbilde først etter at forrige bilde er
 sendt. Fire nye tester viser at en blokkert mottaker ikke utløser forhåndshenting,

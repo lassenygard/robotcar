@@ -191,6 +191,11 @@ class Navigator:
                             break
                     raise ValueError('Fant ingen entydig kartposisjon under den målte rotasjonen.')
                 elif mode == 'explore':
+                    mapping = await self.map_call({'action':'resume_mapping'})
+                    # Loaded maps start with mapping disabled. Extend the active
+                    # map and validate clearance even when no frontiers exist.
+                    await self.map_call({'action':'plan', 'goal':mapping['pose'][:2]})
+                    save_name = mapping.get('name') or 'explore-'+time.strftime('%Y%m%d-%H%M%S')
                     for _ in range(100):
                         options = (await self.map_call({'action':'frontiers'}))['targets']
                         selected = None
@@ -202,7 +207,9 @@ class Navigator:
                             except ValueError:
                                 continue
                         if selected is None:
-                            await self.map_call({'action':'save', 'name':'apartment'})
+                            await self.map_call({'action':'save', 'name':save_name})
+                            if options:
+                                raise ValueError('Ingen sikker rute til områdene som gjenstår. Delkartet er lagret.')
                             return
                         await self.goto(selected)
                     raise ValueError('Kartleggingens rundegrense er nådd.')
