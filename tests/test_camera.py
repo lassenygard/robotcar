@@ -8,6 +8,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
+from aiohttp import MultipartReader
 from aiohttp.test_utils import TestClient, TestServer
 from robotcar import camera
 
@@ -99,12 +100,13 @@ class CameraHTTPTests(unittest.IsolatedAsyncioTestCase):
         self.cam.frame = camera.Frame(8, time.monotonic(), JPEG)
         response = await self.client.get('/stream/front')
         self.assertEqual(response.status, 200)
+        reader = MultipartReader.from_response(response)
         async with asyncio.timeout(2):
-            first = await response.content.readuntil(b'\r\n\r\n')
-            self.assertIn(b'X-Frame-Sequence: 8', first)
-            self.assertEqual(await response.content.readexactly(len(JPEG)+2), JPEG+b'\r\n')
+            part = await reader.next()
+            self.assertEqual(part.headers['X-Frame-Sequence'], '8')
+            self.assertEqual(await part.read(), JPEG)
             self.cam.frame = camera.Frame(8, time.monotonic()-2, JPEG)
-            self.assertEqual(await response.content.read(), b'--frame--\r\n')
+            self.assertIsNone(await reader.next())
         response.close()
 
 
