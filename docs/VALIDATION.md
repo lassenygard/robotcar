@@ -178,6 +178,22 @@ strømmer lukkes og nye forespørsler avvises. En watchdog dekker selve
 HTTP-serveren og overvåkingen av fangstprosessene. Test med simulerte bilder
 erstatter ikke ny kontroll av begge faktiske kameraer etter fysisk utbedring.
 
+Runtime `7bf722ab8e5880da4ee0f347db8fdf65340ce9a2` er installert og
+manifestkontrollert på begge Pi-er. Alle 52 tester bestod på begge, inkludert
+de ekte underprosessene med simulerte bilder. Under en avgrenset prøve på
+Pi 5 ble kameratjenestens hovedprosess stanset med SIGSTOP. Systemd oppdaget
+låsen, avsluttet prosessgruppen og startet tjenesten igjen; fersk status var
+tilbake etter 11,71 s og omstartstelleren økte fra 0 til 1. Kameraene var
+fortsatt utilgjengelige på maskinvarenivå etter denne prøven.
+
+Ny innlogget HTTPS-prøve fra LAN ga 503 for begge manglende videostrømmer,
+gyldig kartbilde og fungerende WebSocket. Median/maks. rundtur var 17,7/25,8 ms.
+Uinnlogget video, kart og WebSocket ble fortsatt avvist. LiDAR leverte rundt
+6,9 skanninger/s, og posisjonen ble gjenkjent i det lagrede stasjonære kartet
+etter Pi 5-omstarten uten nye kamerabilder. Dette er fortsatt ikke validering
+etter fysisk flytting. Motorene var sperret, autonomi og kalibreringsflagg
+var av, begge batteritimere var deaktivert og begge Pi-er viste `throttled=0x0`.
+
 ## Ikke ferdig verifisert
 
 0. **Kameraer:** begge sensorer må bli oppdaget igjen, deretter må uavhengig
