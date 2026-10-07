@@ -18,8 +18,8 @@ Begge Pi-er kjører nå på vanlig strømforsyning uten registrert lav spenning
 i denne oppstarten. **Motorene er sperret fordi bilen er tilkoblet kabler.**
 Den tidligere batteritimeren er deaktivert. Full leilighetskartlegging,
 rotasjon for gjenkjenning, go-to og vaktrunder gjenstår å prøve fysisk etter
-kalibrering og frakobling av kablene. Koden er committet lokalt;
-GitHub-publisering venter fortsatt på app-tilgang til riktig repo.
+kalibrering og frakobling av kablene. Kode og dokumentasjon er publisert på
+[arbeidsgrenen i GitHub](https://github.com/lassenygard/robotcar/tree/codex/dual-pi-robotcar).
 
 ## Bruk
 

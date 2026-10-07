@@ -241,9 +241,12 @@ og nettleserens skjermvisning inngår ikke. Målingen krever fungerende kameraer
    Innlogget video, WebSocket og kart er bekreftet via domenet fra LAN. Faktisk
    videoalder og styreforsinkelse fra mobilnett gjenstår å måle; kjøring og
    stopp ved nettbrudd må prøves med person ved bilen og uten strømkabler.
-5. **GitHub-publisering:** repository finnes og kan leses, men forsøk på å
-   opprette arbeidsgrenen via GitHub-koblingen ga 403, «Resource not accessible
-   by integration». Installasjonslisten mangler appinstallasjon for
-   `lassenygard`, som eier repoet. Ingen vellykket push er dokumentert ennå.
+
+GitHub-publisering er bekreftet 2026-10-07 via lokal Git og SSH som
+`lassenygard`, under Linux-brukeren `pi`. Remote er
+`git@github.com:lassenygard/robotcar.git`; ingen Git- eller miljøoverstyringer
+av SSH ble funnet. Første vellykkede push av `codex/dual-pi-robotcar` ble
+kontrollert mot remote og ga `7a1cdd88cc2118cb6eadebfb2cdadc69eef25f20`.
+Tidligere feil i appintegrasjonen hindrer dermed ikke kildekodepublisering.
 
 Programvaretestene erstatter ikke disse fysiske og eksterne kontrollene.
