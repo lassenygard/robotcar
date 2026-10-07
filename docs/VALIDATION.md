@@ -278,3 +278,20 @@ kontrollert mot remote og ga `7a1cdd88cc2118cb6eadebfb2cdadc69eef25f20`.
 Tidligere feil i appintegrasjonen hindrer dermed ikke kildekodepublisering.
 
 Programvaretestene erstatter ikke disse fysiske og eksterne kontrollene.
+
+## Kontroll etter ny strømfrakobling
+
+2026-10-07 kl. 21:15: etter brukerens melding om full strømfrakobling og
+oppstart av begge Pi-er var begge tilgjengelige. Pi 5 rapporterte ingen
+oppdagede kameraer i en uavhengig Picamera2-opptelling. Oppstartsloggen viste
+fortsatt `SDA stuck at low` og mislykket sensor-ID-lesing for både imx219
+og imx708. Begge videoruter returnerte 503. `get_throttled=0x0` på begge
+Pi-er; strømfrakoblingen løste dermed ikke kamerafeilen. Kontroll av
+flatkabler/tilkoblinger og eventuelt ett kamera om gangen gjenstår, med
+strømmen helt frakoblet under fysisk håndtering.
+
+LiDAR leverte ca. 7 Hz og posisjonen i det stillestående kartet var kjent.
+Ny måling gjennom HTTPS fra LAN ga WebSocket-median 22,9 ms, maks. 26,4 ms;
+den tidligere store forsinkelsen var ikke til stede i denne prøven.
+Motorsperren var fortsatt aktiv. Ingen aktiverings- eller kjørekommandoer
+ble sendt.
