@@ -206,6 +206,24 @@ Kontrollpanelet rydder gamle mål og avviser forsinkede bilder fra forrige kart.
 Ti nye Python-tester og fem tester av kontrollpanelets faktiske JavaScript
 dekker disse forløpene med simulerte motorer og nettverk. På arbeidsmaskinen
 består totalt 69 Python-tester og fem JavaScript-tester.
+Versjon `f246e552d445ba0d8d9257b2b48b7e678cb45525` er deretter installert
+og manifestkontrollert på begge Pi-er, med 69 beståtte Python-tester på hver.
+[GitHub Actions-kjøringen](https://github.com/lassenygard/robotcar/actions/runs/37620595867)
+bestod også, inkludert de fem JavaScript-testene. Gjennom HTTPS godtok
+serveren kartbilde/status med riktig kartidentitet og avviste et gammelt
+kartbilde med 409 og planlegging i feil kart med 400. Ingen motorer ble aktivert.
+
+Nettmålingen etter installasjonen var tregere enn tidligere: direkte til
+robotens webtjeneste ga 12 WebSocket-ping median 4,6 ms, maks. 10,1 ms.
+Via det offentlige HTTPS-navnet var medianen 649,8 ms, maks. 1693,7 ms.
+HTTPS direkte til edge-maskinens LAN-adresse ga median 308,9 ms, maks.
+575,4 ms. Dette avgrenser problemet til nettveien gjennom edge, uten å
+bevise én bestemt årsak. Edge hadde samtidig systemnedlastinger og en
+2,4 GHz Wi-Fi-forbindelse med mottakshastighet 7,2 Mbit/s og signal −66 dBm;
+strømsparing var allerede av. Ny måling med roligere nett eller kablet edge
+gjenstår. Målingene er fra LAN; de er ikke mobilnett- eller videomålinger.
+Pi 5 var 77,4 °C med `get_throttled=0x80000` (tidligere temperaturgrense,
+ingen aktiv undervoltindikasjon); varme under vedvarende last må også følges opp.
 
 Automatisk utforsking slår nå på oppdatering av et innlastet kart før den
 velger mål. Den kontrollerer også klaringen ved startposisjonen når listen
