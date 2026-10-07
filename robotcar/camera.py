@@ -81,6 +81,12 @@ class Frame:
     jpeg: bytes
 
 
+def frame_part(frame):
+    header = (f'--frame\r\nContent-Type: image/jpeg\r\nContent-Length: {len(frame.jpeg)}\r\n'
+              f'X-Frame-Sequence: {frame.seq}\r\nX-Frame-Monotonic: {frame.when}\r\n\r\n').encode()
+    return header + frame.jpeg + b'\r\n'
+
+
 async def read_frame(reader, timeout):
     async with asyncio.timeout(timeout):
         when, length = HEADER.unpack(await reader.readexactly(HEADER.size))
@@ -217,9 +223,7 @@ def create_app(cameras=None, start_workers=True):
                     break
                 if frame.seq != seq:
                     seq = frame.seq
-                    header = (f'--frame\r\nContent-Type: image/jpeg\r\nContent-Length: {len(frame.jpeg)}\r\n'
-                              f'X-Frame-Sequence: {frame.seq}\r\nX-Frame-Monotonic: {frame.when}\r\n\r\n').encode()
-                    await asyncio.wait_for(response.write(header + frame.jpeg + b'\r\n'), timeout=1)
+                    await asyncio.wait_for(response.write(frame_part(frame)), timeout=1)
                 await asyncio.sleep(.025)
         except (ConnectionError, asyncio.TimeoutError):
             if request.transport:

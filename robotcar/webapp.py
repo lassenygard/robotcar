@@ -12,6 +12,7 @@ from urllib.parse import urlsplit
 from aiohttp import ClientError, ClientSession, ClientTimeout, WSMsgType, web
 from .common import DATA, RUN, read_json
 from .navigation import MotorClient, Navigator
+from .video import stream_latest
 
 
 def password_matches(password, encoded):
@@ -20,7 +21,7 @@ def password_matches(password, encoded):
     return hmac.compare_digest(actual, expected)
 
 
-def create_app(motor=None):
+def create_app(motor=None, camera_base='http://127.0.0.1:8800'):
     username = os.environ.get('WEB_USERNAME', 'pi')
     password_hash = os.environ.get('WEB_PASSWORD_HASH', '')
     if not password_hash:
@@ -95,7 +96,7 @@ def create_app(motor=None):
         if camera:
             if camera not in ('front', 'rear'):
                 raise web.HTTPNotFound()
-            url = 'http://127.0.0.1:8800/stream/'+camera
+            return await stream_latest(request, http, camera_base+'/snapshot/'+camera)
         else:
             url = 'http://127.0.0.1:8810/map.png'
         try:
@@ -208,7 +209,8 @@ def create_app(motor=None):
                         raise ValueError('Innloggingen er utløpt.')
                     command = msg.get('action')
                     if command == 'ping':
-                        await ws.send_json({'type':'pong', 'sent':msg.get('sent')})
+                        await ws.send_json({'type':'pong', 'sent':msg.get('sent'),
+                                            'server_monotonic':time.monotonic()})
                         continue
                     async with control_lock:
                         if command == 'stop':

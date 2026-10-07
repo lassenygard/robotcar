@@ -35,7 +35,7 @@ bildetrekk; ingen kamerabilder er lagt i det offentlige repoet.
 
 ## Automatiske tester
 
-52 tester dekker gjeldende kildekode med
+56 tester dekker gjeldende kildekode med
 `python3 -m unittest discover -s tests -v`. Testene kjøres lokalt og på hver Pi
 før en ny versjon aktiveres. Installert kildeversjon står i
 `/opt/robotcar/current/REVISION`; alle installerte filer har kontrollsummer.
@@ -195,6 +195,18 @@ etter fysisk flytting. Motorene var sperret, autonomi og kalibreringsflagg
 var av, begge batteritimere var deaktivert og begge Pi-er viste `throttled=0x0`.
 
 ## Ikke ferdig verifisert
+
+Videogatewayen henter nå et nytt stillbilde først etter at forrige bilde er
+sendt. Fire nye tester viser at en blokkert mottaker ikke utløser forhåndshenting,
+at neste henting hopper til nyeste bilde, at skriving har en tidsgrense og at
+gamle/manglende bilder avvises før en strøm åpnes. HTTP-testen kontrollerer
+også videresending av bildets sekvensnummer og fangsttid. Dette er simulert
+nettverkslast; endelig forsinkelse gjennom Internett må fremdeles måles.
+
+`scripts/check_gateway.py` bruker nå WebSocket-tidsstempler til å anslå en
+øvre bildealdersgrense med rapportert klokkeusikkerhet. Målingen starter når
+kamerafangsten returnerer og slutter ved mottatt JPEG. Sensorens eksponering
+og nettleserens skjermvisning inngår ikke. Målingen krever fungerende kameraer.
 
 0. **Kameraer:** begge sensorer må bli oppdaget igjen, deretter må uavhengig
    fangst og begge videostrømmer prøves med virkelige bilder.

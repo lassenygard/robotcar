@@ -34,19 +34,23 @@ async def check(base, credentials):
             async with http.get(base+'/video/'+name) as response:
                 assert response.status == 200
                 reader = MultipartReader.from_response(response)
-                stamps, sizes = [], []
+                stamps, sizes, ages = [], [], []
                 for _ in range(10):
                     part = await reader.next()
                     assert part is not None, 'Camera stream ended'
                     frame = await part.read()
                     assert frame.startswith(b'\xff\xd8') and frame.endswith(b'\xff\xd9'), 'Invalid JPEG'
-                    stamps.append(time.monotonic())
+                    received = time.monotonic()
+                    stamps.append(received)
+                    captured = float(part.headers['X-Frame-Monotonic'])
+                    ages.append(max(0, received-captured+offset_upper)*1000)
                     sizes.append(len(frame))
                 return {'fps_received':round(9/(stamps[-1]-stamps[0]),1),
-                        'average_jpeg_bytes':round(statistics.mean(sizes))}
+                        'average_jpeg_bytes':round(statistics.mean(sizes)),
+                        'capture_age_upper_bound_median_ms':round(statistics.median(ages),1),
+                        'capture_age_upper_bound_max_ms':round(max(ages),1)}
 
-        streams = dict(zip(('front','rear'), await asyncio.gather(video('front'),video('rear'))))
-        pings, state = [], {}
+        pings, offsets, state = [], [], {}
         async with http.ws_connect(base+'/ws', origin=base, heartbeat=5) as ws:
             for number in range(10):
                 started = time.monotonic()
@@ -59,10 +63,19 @@ async def check(base, credentials):
                         if data.get('type') == 'state':
                             state = data
                         if data.get('type') == 'pong' and data['sent'] == number:
-                            pings.append((time.monotonic()-started)*1000)
+                            received = time.monotonic()
+                            pings.append((received-started)*1000)
+                            server = float(data['server_monotonic'])
+                            offsets.append((server-received, server-started))
                             break
                 await asyncio.sleep(.1)
+        # No clock synchronisation assumption: the server timestamp occurred
+        # between our send and receive. The narrowest interval bounds offset.
+        offset_lower, offset_upper = min(offsets, key=lambda bounds: bounds[1]-bounds[0])
+        streams = dict(zip(('front','rear'), await asyncio.gather(video('front'),video('rear'))))
         return dict(url=base, authentication='passed', cross_origin='refused', video=streams,
+                    clock_uncertainty_ms=round((offset_upper-offset_lower)*1000,1),
+                    video_age_reference='capture_array return to JPEG receipt; excludes exposure and screen rendering',
                     websocket_ping_median_ms=round(statistics.median(pings),1),
                     websocket_ping_max_ms=round(max(pings),1),
                     motor={k:state.get('motor',{}).get(k) for k in ('connected','armed','left','right')},

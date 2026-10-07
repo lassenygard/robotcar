@@ -114,6 +114,11 @@ fangstprosessene; de andre robotcar-tjenestene får ingen slik watchdog.
 En vedvarende maskinvarefeil vises som utilgjengelig kamera mens øvrige
 tjenester fortsetter. Ingen automatisk omstart av hele Pi-en utføres.
 
+Nettgatewayen henter siste JPEG først når forrige er sendt, med høyst 20
+hentinger/s per seer. Små sendebuffere og en skrivefrist på høyst 0,5 s
+begrenser oppsamling ved treg forbindelse; for gamle bilder avvises. Dette
+begrenser gatewayens bufring, men garanterer ikke nettleserens visningsforsinkelse.
+
 ## Før autonom kjøring
 
 1. Kontroller LiDAR-strøm, USB-/UART-kabel og tilkoblingen til skannerhodet.
