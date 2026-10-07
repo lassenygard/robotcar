@@ -5,7 +5,10 @@ Unknown space is never traversable. Pose confidence is based on actual returns,
 not elapsed motor command time. Map files contain private apartment data.
 """
 import heapq
+import hashlib
+import io
 import math
+import uuid
 from pathlib import Path
 
 import cv2
@@ -77,6 +80,7 @@ class OccupancyMap:
         self.localized = False
         self.revision = 0
         self.name = None
+        self.map_id = str(uuid.uuid4())  # Identity of the coordinate frame, not its filename.
 
     def cells(self, points):
         return np.floor(np.asarray(points)/self.resolution + self.size/2).astype(int)
@@ -240,12 +244,15 @@ class OccupancyMap:
         import json
         with atomic_file(path) as stream:
             np.savez_compressed(stream, grid=self.grid, resolution=self.resolution, pose=self.pose,
-                                keyframes=json.dumps(self.keyframes, allow_nan=False), version=1)
+                                keyframes=json.dumps(self.keyframes, allow_nan=False), version=1,
+                                map_id=self.map_id)
 
     @classmethod
     def load(cls, path):
         import json
-        with np.load(path, allow_pickle=False) as data:
+        # Read once so legacy identity and grid come from the same atomic file version.
+        contents = Path(path).read_bytes()
+        with np.load(io.BytesIO(contents), allow_pickle=False) as data:
             grid = data['grid']
             if grid.ndim != 2 or grid.shape[0] != grid.shape[1] or not 10 <= grid.shape[0] <= 2000 or not np.isfinite(grid).all():
                 raise ValueError('invalid map dimensions or values')
@@ -255,6 +262,13 @@ class OccupancyMap:
             if pose.shape != (3,) or not np.isfinite(pose).all() or int(data['version']) != 1:
                 raise ValueError('invalid map pose or version')
             result = cls(grid.shape[0], resolution)
+            if 'map_id' in data:
+                result.map_id = str(uuid.UUID(str(data['map_id'])))
+            else:
+                # Old maps have no frame metadata. Repeated loads are stable;
+                # unrelated legacy files are conservatively treated as different maps.
+                result.map_id = str(uuid.uuid5(uuid.NAMESPACE_URL,
+                    Path(path).name + ':' + hashlib.sha256(contents).hexdigest()))
             result.grid = grid.astype(np.float32)
             result.keyframes = json.loads(str(data['keyframes']))
             result.pose = pose.copy()

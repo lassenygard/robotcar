@@ -70,10 +70,11 @@ class Navigator:
         self.task = None
         self.mode, self.error, self.path = 'idle', None, []
         self.goal = None
+        self.map_id = None
         self.settings = read_json(DATA/'patrol.json', {'waypoints':[], 'interval_s':300})
 
     def status(self):
-        return dict(mode=self.mode, error=self.error, path=self.path, goal=self.goal,
+        return dict(mode=self.mode, error=self.error, path=self.path, goal=self.goal, map_id=self.map_id,
                     patrol=self.settings, enabled=os.environ.get('AUTONOMY_ENABLED') == '1',
                     calibrated=os.environ.get('MOTION_CALIBRATED') == '1')
 
@@ -87,6 +88,31 @@ class Navigator:
                 pass
         await self.motor.stop()
         self.mode, self.path, self.goal = 'idle', [], None
+        self.map_id = None
+
+    async def map_context(self, message):
+        expected = message.get('map_id')
+        if not isinstance(expected, str) or not expected:
+            raise ValueError('Velg mål eller vaktpunkter i det aktive kartet først.')
+        # Ask the mapper itself: the periodically published status can lag a map switch.
+        return await self.map_call({'action':'status', 'map_id':expected})
+
+    async def bound_map_call(self, message):
+        if not self.map_id:
+            raise ValueError('Navigasjonen mangler et aktivt kart.')
+        return await self.map_call({**message, 'map_id':self.map_id})
+
+    def current_map(self):
+        state = read_json(RUN/'map.json')
+        if not self.map_id or state.get('map_id') != self.map_id:
+            raise ValueError('Kartet er byttet; navigasjonen er stoppet.')
+        try:
+            age = time.time()-(RUN/'map.json').stat().st_mtime
+        except OSError:
+            age = float('inf')
+        if age > 1:
+            raise ValueError('Karttjenesten har sluttet å oppdatere; navigasjonen er stoppet.')
+        return state
 
     def validate_ready(self):
         if os.environ.get('AUTONOMY_ENABLED') != '1':
@@ -117,11 +143,14 @@ class Navigator:
                     raise ValueError('Person eller dyr nær bilen; stoppet.')
 
     async def pulse(self, left, right, seconds=.18):
+        await self.bound_map_call({'action':'status'})
+        self.current_map()
         self.obstacle_check((left+right)/2, (right-left)/2)
         await self.motor.request('arm')
         start = time.monotonic()
         try:
             while time.monotonic()-start < min(seconds, 2.0):
+                self.current_map()
                 self.obstacle_check((left+right)/2, (right-left)/2)
                 await self.motor.request('drive', left=left, right=right, ttl=.25, mode='autonomous')
                 await asyncio.sleep(.08)
@@ -131,12 +160,12 @@ class Navigator:
 
     async def goto(self, goal):
         self.goal = goal
-        result = await self.map_call({'action':'plan', 'goal':goal})
+        result = await self.bound_map_call({'action':'plan', 'goal':goal})
         self.path = result['path']
         began, progress_at = time.monotonic(), time.monotonic()
         best = float('inf')
         while time.monotonic()-began < 300:
-            state = read_json(RUN/'map.json')
+            state = self.current_map()
             if not state.get('localized') or state.get('confidence', 0) < .65 or time.monotonic()-state.get('scan_monotonic', 0) > .8:
                 raise ValueError('Kartposisjonen er usikker; bilen står stille.')
             x, y, theta = state['pose']
@@ -148,7 +177,7 @@ class Navigator:
                 best, progress_at = distance, time.monotonic()
             if time.monotonic()-progress_at > 20:
                 raise ValueError('Ingen målt fremdrift; kontrollér motorene.')
-            result = await self.map_call({'action':'plan', 'goal':goal})
+            result = await self.bound_map_call({'action':'plan', 'goal':goal})
             self.path = result['path']
             target = next((p for p in self.path if math.dist([x,y], p) > .25), goal)
             error = wrap(math.atan2(target[1]-y, target[0]-x)-theta)
@@ -162,6 +191,15 @@ class Navigator:
     async def start(self, mode, message):
         self.validate_ready()
         await self.stop()
+        context = await self.map_context(message)
+        if mode == 'patrol':
+            if self.settings.get('map_id') != context['map_id']:
+                raise ValueError('Vaktruten tilhører et annet eller eldre kart. Velg vaktpunktene på nytt.')
+            if not self.settings['waypoints']:
+                raise ValueError('Legg til minst ett vaktpunkt på kartet.')
+        # A running round uses the validated route even if settings are edited later.
+        route = dict(self.settings)
+        self.map_id = context['map_id']
         self.mode, self.error = mode, None
         async def run():
             try:
@@ -172,7 +210,7 @@ class Navigator:
                     rotation = 0.0
                     for _ in range(160):
                         try:
-                            result = await self.map_call({'action':'relocalize'})
+                            result = await self.bound_map_call({'action':'relocalize'})
                             if result.get('localized'):
                                 return
                         except ValueError:
@@ -185,42 +223,40 @@ class Navigator:
                         rotation += abs(float(delta[2]))
                         previous = current
                         if rotation >= 2*math.pi:
-                            result = await self.map_call({'action':'relocalize'})
+                            result = await self.bound_map_call({'action':'relocalize'})
                             if result.get('localized'):
                                 return
                             break
                     raise ValueError('Fant ingen entydig kartposisjon under den målte rotasjonen.')
                 elif mode == 'explore':
-                    mapping = await self.map_call({'action':'resume_mapping'})
+                    mapping = await self.bound_map_call({'action':'resume_mapping'})
                     # Loaded maps start with mapping disabled. Extend the active
                     # map and validate clearance even when no frontiers exist.
-                    await self.map_call({'action':'plan', 'goal':mapping['pose'][:2]})
+                    await self.bound_map_call({'action':'plan', 'goal':mapping['pose'][:2]})
                     save_name = mapping.get('name') or 'explore-'+time.strftime('%Y%m%d-%H%M%S')
                     for _ in range(100):
-                        options = (await self.map_call({'action':'frontiers'}))['targets']
+                        options = (await self.bound_map_call({'action':'frontiers'}))['targets']
                         selected = None
                         for target in options:
                             try:
-                                await self.map_call({'action':'plan', 'goal':target})
+                                await self.bound_map_call({'action':'plan', 'goal':target})
                                 selected = target
                                 break
                             except ValueError:
                                 continue
                         if selected is None:
-                            await self.map_call({'action':'save', 'name':save_name})
+                            await self.bound_map_call({'action':'save', 'name':save_name})
                             if options:
                                 raise ValueError('Ingen sikker rute til områdene som gjenstår. Delkartet er lagret.')
                             return
                         await self.goto(selected)
                     raise ValueError('Kartleggingens rundegrense er nådd.')
                 elif mode == 'patrol':
-                    if not self.settings['waypoints']:
-                        raise ValueError('Legg til minst ett vaktpunkt på kartet.')
                     while True:
-                        for target in self.settings['waypoints']:
+                        for target in route['waypoints']:
                             await self.goto(target)
                         self.mode = 'patrol_wait'
-                        await asyncio.sleep(self.settings['interval_s'])
+                        await asyncio.sleep(route['interval_s'])
                         self.mode = 'patrol'
                 else:
                     raise ValueError('Ukjent navigasjonsmodus.')
@@ -231,16 +267,20 @@ class Navigator:
             finally:
                 await self.motor.stop()
                 self.mode, self.path, self.goal = 'idle', [], None
+                self.map_id = None
         self.task = asyncio.create_task(run())
 
-    def save_patrol(self, message):
+    async def save_patrol(self, message):
         waypoints = message.get('waypoints', [])
         interval = float(message.get('interval_s', 300))
-        if not 30 <= interval <= 86400 or len(waypoints) > 30:
+        if not isinstance(waypoints, list) or not 30 <= interval <= 86400 or len(waypoints) > 30:
             raise ValueError('Vaktintervall må være 30–86400 sekunder, maks. 30 punkter.')
         for p in waypoints:
-            if len(p) != 2 or not all(math.isfinite(float(v)) and abs(float(v)) < 15 for v in p):
+            if not isinstance(p, (list, tuple)) or len(p) != 2 or not all(math.isfinite(float(v)) and abs(float(v)) < 15 for v in p):
                 raise ValueError('Ugyldig vaktpunkt.')
-        self.settings = dict(waypoints=waypoints, interval_s=interval)
-        atomic_json(DATA/'patrol.json', self.settings)
+        context = await self.map_context(message)
+        settings = dict(waypoints=[[float(v) for v in p] for p in waypoints],
+                        interval_s=interval, map_id=context['map_id'])
+        atomic_json(DATA/'patrol.json', settings)
+        self.settings = settings
         return self.settings

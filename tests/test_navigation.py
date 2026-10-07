@@ -51,9 +51,14 @@ class ExplorationTests(unittest.IsolatedAsyncioTestCase):
         self.temp.cleanup()
 
     async def run_exploration(self, callback):
-        nav = Navigator(self.motor, callback)
+        async def bound_callback(message):
+            self.assertEqual(message['map_id'], 'test-map')
+            if message['action'] == 'status':
+                return {'map_id':'test-map'}
+            return await callback(message)
+        nav = Navigator(self.motor, bound_callback)
         nav.goto = AsyncMock()
-        await nav.start('explore', {})
+        await nav.start('explore', {'map_id':'test-map'})
         await asyncio.wait_for(nav.task, 2)
         self.motor.request.assert_not_called()
         self.assertEqual(nav.mode, 'idle')
@@ -75,7 +80,7 @@ class ExplorationTests(unittest.IsolatedAsyncioTestCase):
         nav = await self.run_exploration(map_call)
         self.assertIsNone(nav.error)
         self.assertEqual(nav.goto.await_count, 2)
-        self.assertEqual(calls[-1], {'action': 'save', 'name': 'living-room'})
+        self.assertEqual(calls[-1], {'action': 'save', 'name': 'living-room', 'map_id':'test-map'})
 
     async def test_unreachable_frontiers_save_partial_map_and_report_blockage(self):
         calls = []
@@ -91,7 +96,7 @@ class ExplorationTests(unittest.IsolatedAsyncioTestCase):
         nav = await self.run_exploration(map_call)
         self.assertIn('Delkartet', nav.error)
         nav.goto.assert_not_called()
-        self.assertEqual(calls[-1], {'action': 'save', 'name': 'living-room'})
+        self.assertEqual(calls[-1], {'action': 'save', 'name': 'living-room', 'map_id':'test-map'})
 
     async def test_invalid_start_clearance_is_not_success_with_empty_frontiers(self):
         calls = []

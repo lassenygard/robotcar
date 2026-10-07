@@ -100,7 +100,8 @@ def create_app(motor=None, camera_base='http://127.0.0.1:8800'):
         else:
             url = 'http://127.0.0.1:8810/map.png'
         try:
-            async with http.get(url, timeout=ClientTimeout(total=None, sock_connect=2, sock_read=3)) as upstream:
+            params = {'map_id':request.query['map_id']} if 'map_id' in request.query else {}
+            async with http.get(url, params=params, timeout=ClientTimeout(total=None, sock_connect=2, sock_read=3)) as upstream:
                 response = web.StreamResponse(status=upstream.status, headers={
                     'Content-Type':upstream.headers.get('Content-Type','application/octet-stream'),
                     'Cache-Control':'no-store', 'X-Accel-Buffering':'no'})
@@ -135,7 +136,7 @@ def create_app(motor=None, camera_base='http://127.0.0.1:8800'):
                     await navigator.start(name, msg)
                     result = navigator.status()
                 elif name == 'patrol_settings':
-                    result = navigator.save_patrol(msg)
+                    result = await navigator.save_patrol(msg)
                 else:
                     if navigator.mode != 'idle':
                         await navigator.stop()

@@ -197,6 +197,16 @@ var av, begge batteritimere var deaktivert og begge Pi-er viste `throttled=0x0`.
 
 ## Ikke ferdig verifisert
 
+Kartfiler har nå en fast identitet for koordinatsystemet. Den følger med ved
+lagring, gjenåpning og utvidelse, også ved nytt filnavn. Eldre filer får en
+stabil identitet ved lesing uten at originalen endres. Mål og vaktruter fra
+et annet kart avvises før motoraktivering; lagrede ruter uten kartidentitet
+må velges på nytt. Kartbytte under en tur stopper videre kjøring.
+Kontrollpanelet rydder gamle mål og avviser forsinkede bilder fra forrige kart.
+Ti nye Python-tester og fem tester av kontrollpanelets faktiske JavaScript
+dekker disse forløpene med simulerte motorer og nettverk. På arbeidsmaskinen
+består totalt 69 Python-tester og fem JavaScript-tester.
+
 Automatisk utforsking slår nå på oppdatering av et innlastet kart før den
 velger mål. Den kontrollerer også klaringen ved startposisjonen når listen
 med utforskningsmål er tom. Hvis alle gjenværende mål mangler sikker rute,

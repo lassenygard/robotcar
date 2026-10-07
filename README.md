@@ -38,6 +38,8 @@ kalibrering og frakobling av kablene. Kode og dokumentasjon er publisert på
   hvilken visning operatøren velger.
 - Kartmål og vaktpunkter velges ved å klikke i kartet. Ukjent gulv og områder
   for nær hindringer blir ikke godkjent som rute.
+- Mål og vaktruter følger kartet de ble valgt i. Kartbytte fjerner gamle mål;
+  vaktruter lagret før kartidentitet ble innført må velges og lagres på nytt.
 
 Ingen automatisk tur starter ved oppstart eller etter nettverksbrudd.
 

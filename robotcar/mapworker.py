@@ -126,7 +126,8 @@ class Mapper:
                         scan_monotonic=self.last_scan,
                         localized=self.map.localized and time.monotonic()-self.last_scan < 1,
                         age_s=round(time.monotonic()-self.last_scan, 2), mapping=self.map.mapping,
-                        name=self.map.name, revision=self.map.revision, resolution=self.map.resolution,
+                        name=self.map.name, map_id=self.map.map_id,
+                        revision=self.map.revision, resolution=self.map.resolution,
                         size=self.map.size, error=self.error, landmarks=len(self.map.keyframes),
                         recognised=self.landmark_matches,
                         maps=sorted(p.stem for p in (DATA/'maps').glob('*.npz')))
@@ -134,9 +135,12 @@ class Mapper:
     def action(self, msg):
         with self.lock:
             action = msg.get('action')
+            self.require_context(msg.get('map_id'))
             if self.load_error and action not in ('new', 'load'):
                 raise ValueError(self.load_error)
-            if action in ('save', 'load'):
+            if action == 'status':
+                return self.status()
+            elif action in ('save', 'load'):
                 name = str(msg.get('name', ''))
                 if not re.fullmatch(r'[a-zA-Z0-9_-]{1,64}', name):
                     raise ValueError('Map name: use letters, numbers, underscore or hyphen')
@@ -185,6 +189,15 @@ class Mapper:
                 raise ValueError('Unknown map action')
             return self.status()
 
+    def require_context(self, expected):
+        if expected is not None and expected != self.map.map_id:
+            raise ValueError('Kartet er byttet. Velg mål eller vaktpunkter i det aktive kartet.')
+
+    def image(self, expected=None):
+        with self.lock:
+            self.require_context(expected)
+            return self.map.image()
+
     def reset_observations(self):
         """Matches and live timestamps belong to the map that produced them."""
         self.last_scan = 0.0
@@ -204,10 +217,11 @@ def main():
         return web.json_response(await asyncio.to_thread(mapper.status))
 
     async def image(request):
-        def render():
-            with mapper.lock:
-                return mapper.map.image()
-        return web.Response(body=await asyncio.to_thread(render), content_type='image/png', headers={'Cache-Control':'no-store'})
+        try:
+            content = await asyncio.to_thread(mapper.image, request.query.get('map_id'))
+        except ValueError as exc:
+            raise web.HTTPConflict(text=str(exc))
+        return web.Response(body=content, content_type='image/png', headers={'Cache-Control':'no-store'})
 
     async def action(request):
         try:
