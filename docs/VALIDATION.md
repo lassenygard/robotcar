@@ -178,8 +178,9 @@ strømmer lukkes og nye forespørsler avvises. En watchdog dekker selve
 HTTP-serveren og overvåkingen av fangstprosessene. Test med simulerte bilder
 erstatter ikke ny kontroll av begge faktiske kameraer etter fysisk utbedring.
 
-Runtime `7bf722ab8e5880da4ee0f347db8fdf65340ce9a2` er installert og
-manifestkontrollert på begge Pi-er. Alle 52 tester bestod på begge, inkludert
+Kamerareparasjonen ble først installert som
+`7bf722ab8e5880da4ee0f347db8fdf65340ce9a2` og manifestkontrollert på begge
+Pi-er. Alle de daværende 52 testene bestod på begge, inkludert
 de ekte underprosessene med simulerte bilder. Under en avgrenset prøve på
 Pi 5 ble kameratjenestens hovedprosess stanset med SIGSTOP. Systemd oppdaget
 låsen, avsluttet prosessgruppen og startet tjenesten igjen; fersk status var
@@ -202,6 +203,10 @@ at neste henting hopper til nyeste bilde, at skriving har en tidsgrense og at
 gamle/manglende bilder avvises før en strøm åpnes. HTTP-testen kontrollerer
 også videresending av bildets sekvensnummer og fangsttid. Dette er simulert
 nettverkslast; endelig forsinkelse gjennom Internett må fremdeles måles.
+
+Videoforbedringen er installert som
+`edc4f36b334b83221b9d4a87937205db4958c5e3` på begge Pi-er, med verifiserte
+manifester og 56 beståtte tester på hver. Kameraenes maskinvarefeil består.
 
 `scripts/check_gateway.py` bruker nå WebSocket-tidsstempler til å anslå en
 øvre bildealdersgrense med rapportert klokkeusikkerhet. Målingen starter når
