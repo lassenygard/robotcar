@@ -204,6 +204,9 @@ lagres delkartet og kjøringen avsluttes med forklaring. Dette behandles ikke
 som ferdig kartlegging. Kartet beholder navnet sitt; nye kart får et eget
 tidsstemplet navn i stedet for å overskrive `apartment` automatisk.
 Tre nye tester dekker disse forløpene med simulerte turer, uten motorbruk.
+Rettelsen er installert og manifestkontrollert på begge Pi-er etter 59
+beståtte tester på hver. Runtime-versjonen er
+`c4abc49e7fbd1774e7cc7281e1d462715c769d94`.
 
 Videogatewayen henter nå et nytt stillbilde først etter at forrige bilde er
 sendt. Fire nye tester viser at en blokkert mottaker ikke utløser forhåndshenting,
@@ -212,7 +215,7 @@ gamle/manglende bilder avvises før en strøm åpnes. HTTP-testen kontrollerer
 også videresending av bildets sekvensnummer og fangsttid. Dette er simulert
 nettverkslast; endelig forsinkelse gjennom Internett må fremdeles måles.
 
-Videoforbedringen er installert som
+Videoforbedringen ble først installert som
 `edc4f36b334b83221b9d4a87937205db4958c5e3` på begge Pi-er, med verifiserte
 manifester og 56 beståtte tester på hver. Kameraenes maskinvarefeil består.
 
