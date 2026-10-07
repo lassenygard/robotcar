@@ -35,7 +35,7 @@ bildetrekk; ingen kamerabilder er lagt i det offentlige repoet.
 
 ## Automatiske tester
 
-42 tester dekker gjeldende kildekode med
+52 tester dekker gjeldende kildekode med
 `python3 -m unittest discover -s tests -v`. Testene kjøres lokalt og på hver Pi
 før en ny versjon aktiveres. Installert kildeversjon står i
 `/opt/robotcar/current/REVISION`; alle installerte filer har kontrollsummer.
@@ -54,6 +54,13 @@ utløpte kommandobilletter, et dødt kamera med gammel statusfil og ugyldige
 JSON-forespørsler. WebSocket-oppryddingen fullfører stopp selv om nettserveren
 kansellerer forespørselen ved nettbrudd. Gyldig og utløpt innlogging skilles også
 for nettleserens gjenoppkobling.
+
+Kameratestene bruker ekte underprosesser med simulerte bilder. En låst prosess
+som ignorerer SIGTERM blir drept og erstattet mens det andre kameraets prosess
+fortsetter med samme prosess-ID og nye bilder. De dekker også ufullstendige,
+gamle og ugyldige bildepakker, 503 ved manglende kamera, avslutning av en åpen
+strøm når bilder stopper, systemd-varsling og sensorvalg når kameranummeret
+endres. Kamerafeil avviser kjørekommandoer også før siste bilde blir gammelt.
 
 Feilinjeksjon under installasjon bekrefter at ufullstendige eller skadde
 programfiler ikke aktiveres, og at forrige versjon kan beholdes/gjenopprettes.
@@ -149,7 +156,32 @@ nettleseren er syntakskontrollert, men ikke visuelt prøvd på nytt: nettleser-
 automatiseringen var utilgjengelig i denne økten. Den tidligere desktop- og
 mobilkontrollen i tabellen gjelder grensesnittet før denne endringen.
 
+## Kamerafeil senere 7. oktober
+
+Bakkameraet sluttet å oppdatere kl. 08:21 ifølge libcamera-loggen. Den gamle
+tjenesten fortsatte å rapportere 20 fps uten feil, selv om bildet var over
+tre timer gammelt. Nettgatewayen korrigerte visningen ut fra bildealderen,
+men kameraet ble ikke gjenopprettet automatisk. Omstart av kameratjenesten
+ga nye driver-timeouter uten bilder fra bakkameraet.
+
+Etter en kontrollert omstart av Pi 5 kl. 12:30 ble ingen av sensorene funnet.
+Kjerneloggen viste `SDA stuck at low` og feil ved lesing av sensor-ID for
+både imx219 og imx708. Omlasting av begge sensordriverne ga samme resultat.
+`throttled=0x0`; dette fastslår ikke årsaken til kamerafeilen. Full frakobling
+av strøm og fysisk kontroll av kamerakablene gjenstår fordi brukeren ikke
+har tilgang til bilen akkurat nå. Pi-ene står fortsatt på, og ingen
+hjulkommandoer er sendt. De tidligere videomålingene ovenfor er historiske.
+
+Koden har nå separate fangstprosesser med tidsgrenser og gradvis lengre
+pause ved gjentatt feil. Et kamera med gamle bilder viser 0 fps og feil;
+strømmer lukkes og nye forespørsler avvises. En watchdog dekker selve
+HTTP-serveren og overvåkingen av fangstprosessene. Test med simulerte bilder
+erstatter ikke ny kontroll av begge faktiske kameraer etter fysisk utbedring.
+
 ## Ikke ferdig verifisert
+
+0. **Kameraer:** begge sensorer må bli oppdaget igjen, deretter må uavhengig
+   fangst og begge videostrømmer prøves med virkelige bilder.
 
 1. **Geometri og full kartlegging:** LiDAR-vinkel, bilens sikkerhetsradius og
    eventuelle faste skygger må kalibreres. Kartet fra én plassering er ikke

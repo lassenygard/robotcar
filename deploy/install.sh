@@ -20,6 +20,14 @@ for unit in robotcar-motor.service robotcar@.service; do
     mv "/etc/systemd/system/.$unit.next" "/etc/systemd/system/$unit"
 done
 sync -f /etc/systemd/system
+if [ "$role" = sensors ]; then
+    camera_dropin=/etc/systemd/system/robotcar@camera.service.d
+    install -d -m 755 "$camera_dropin"
+    install -m 644 "$release_dir/deploy/robotcar-camera-watchdog.conf" "$camera_dropin/.10-watchdog.conf.next"
+    sync -f "$camera_dropin/.10-watchdog.conf.next"
+    mv "$camera_dropin/.10-watchdog.conf.next" "$camera_dropin/10-watchdog.conf"
+    sync -f "$camera_dropin"
+fi
 install -m 644 "$release_dir/deploy/80-robotcar-lidar.rules" /etc/udev/rules.d/
 printf 'd /run/robotcar 0700 pi pi -\n' > /etc/tmpfiles.d/robotcar.conf
 chmod 600 /etc/robotcar/robotcar.env

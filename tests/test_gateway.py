@@ -128,6 +128,17 @@ class GatewayTests(unittest.IsolatedAsyncioTestCase):
         await ws.send_str(json.dumps([]))
         self.assertIn('JSON-objekt', (await self.message(ws, 'error'))['error'])
 
+    async def test_capture_error_blocks_drive_before_last_frame_ages_out(self):
+        atomic_json(self.run/'cameras.json', {'front': {'age_s': .1, 'fps': 0, 'error': 'Sensor disconnected'}})
+        ws = await self.client.ws_connect('/ws')
+        state = await self.message(ws, 'state')
+        await ws.send_json({'action': 'arm'})
+        await self.message(ws, 'ack')
+        await ws.send_json({'action': 'drive', 'left': .2, 'right': .2, 'ticket': state['ticket']})
+        self.assertIn('Kameraet', (await self.message(ws, 'error'))['error'])
+        self.assertNotIn('drive', self.motor.actions)
+        self.assertFalse(self.motor.state['armed'])
+
     async def test_session_probe_requires_a_valid_login(self):
         response = await self.client.get('/api/session')
         self.assertEqual(response.status, 200)

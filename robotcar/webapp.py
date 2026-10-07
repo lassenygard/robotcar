@@ -9,7 +9,7 @@ import time
 from collections import deque
 from pathlib import Path
 from urllib.parse import urlsplit
-from aiohttp import ClientSession, ClientTimeout, WSMsgType, web
+from aiohttp import ClientError, ClientSession, ClientTimeout, WSMsgType, web
 from .common import DATA, RUN, read_json
 from .navigation import MotorClient, Navigator
 
@@ -90,6 +90,7 @@ def create_app(motor=None):
         return web.json_response({'service':'robotcar', 'online':True})
 
     async def proxy(request):
+        response = None
         camera = request.match_info.get('camera')
         if camera:
             if camera not in ('front', 'rear'):
@@ -106,7 +107,13 @@ def create_app(motor=None):
                 async for chunk in upstream.content.iter_chunked(65536):
                     await asyncio.wait_for(response.write(chunk), 1)
                 return response
-        except (OSError, asyncio.TimeoutError):
+        except (ClientError, OSError, asyncio.TimeoutError):
+            # Once video headers have been sent, close the failed stream.
+            # A second HTTP response here would corrupt the multipart body.
+            if response is not None and response.prepared:
+                if request.transport:
+                    request.transport.close()
+                return response
             raise web.HTTPServiceUnavailable(text='Videostrøm eller kart er utilgjengelig.')
 
     async def action(request):
@@ -225,7 +232,8 @@ def create_app(motor=None):
                                 camera_file_age = time.time()-(RUN/'cameras.json').stat().st_mtime
                             except OSError:
                                 camera_file_age = 99
-                            if camera_file_age > 1 or cameras.get('front',{}).get('age_s',99) > 1:
+                            front = cameras.get('front', {})
+                            if camera_file_age > 1 or front.get('age_s',99) > 1 or front.get('error'):
                                 raise ValueError('Kameraet er utilgjengelig; kjøring er stoppet.')
                             left, right = float(msg['left']), float(msg['right'])
                             await motor.request('drive', left=left, right=right, ttl=.3, mode='manual')

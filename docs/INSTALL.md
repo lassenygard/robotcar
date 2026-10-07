@@ -101,6 +101,19 @@ Begge kameraretninger er undersøkt. Front er imx219, kamera 0; bak er
 imx708_wide, kamera 1, rotert 180 grader i programvaren. Sensorene bruker hele
 synsfeltet via 1640×1232 og 2304×1296 før nedskalering til 640×480.
 
+Kameraene velges etter sensormodell, ikke skiftende kameranummer. Hvert kamera
+har en egen fangstprosess. Etter ett sekund uten ferske bilder returnerer
+video og stillbilder 503, og en allerede åpen videostrøm lukkes. En fangst som
+låser seg blir avsluttet og startet på nytt uten å avbryte det andre kameraet.
+Første bilde har 10 sekunders oppstartsfrist; senere bilder har 3 sekunder.
+Gjentatte feil gir gradvis lengre pause mellom forsøk, opptil 30 sekunder.
+
+Sensorinstallasjonen legger en egen åttesekunders systemd-watchdog på
+`robotcar@camera`. Den passer på HTTP-serveren og overvåkingen av
+fangstprosessene; de andre robotcar-tjenestene får ingen slik watchdog.
+En vedvarende maskinvarefeil vises som utilgjengelig kamera mens øvrige
+tjenester fortsetter. Ingen automatisk omstart av hele Pi-en utføres.
+
 ## Før autonom kjøring
 
 1. Kontroller LiDAR-strøm, USB-/UART-kabel og tilkoblingen til skannerhodet.

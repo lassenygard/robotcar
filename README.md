@@ -7,8 +7,11 @@ Pi 4 sammen med en separat LiDAR-leser; kameraer, Hailo-8 og kartlegging kjører
 **Status 2026-10-07:** RPLiDAR fungerer med vanlig seriell lesing etter at
 USB-kabelen ble flyttet til Pi 4. Omtrent 7 skanninger/s sendes til Pi 5.
 Et kart fra bilens stillestående plassering er lagret og lastet inn igjen;
-LiDAR og kameratrekk har bekreftet posisjonen i dette kartet. Kameraene leverer
-ca. 20 fps lokalt. Innlogging, video, LiDAR og posisjon er kontrollert gjennom
+LiDAR og kameratrekk har tidligere bekreftet posisjonen i dette kartet.
+Kameraene leverte ca. 20 fps, men begge sensorer er nå utilgjengelige etter
+en kamerafeil og omstart. Fysisk kontroll gjenstår. Fangstprosessene er nå
+isolert og overvåket; feilhåndteringen er prøvd med simulerte bilder.
+Innlogging, video, LiDAR og posisjon ble tidligere kontrollert gjennom
 HTTPS-domenet fra LAN; full innlogget ytelse fra mobilnett gjenstår.
 
 Begge Pi-er kjører nå på vanlig strømforsyning uten registrert lav spenning
