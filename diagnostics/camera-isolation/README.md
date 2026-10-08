@@ -14,8 +14,9 @@ Den konkrete listen over testkandidater finnes i feltet `units` og i
 før isolering 8. oktober. Første kalde oppstart er observert i ti minutter:
 frontkameraet virket, mens bakkameraet leverte null bilder.
 Ved neste oppstart med bare bakre test feilet identifikasjonen av begge
-sensorene før testprogrammet startet. **Bare bakkameraets test er fortsatt
-aktivert for oppstart**, i påvente av sammenligning med lengre strømavbrekk.
+sensorene før testprogrammet startet. Etter ryddig avslåing og ett minutt
+uten strøm ble begge gjenkjent, men bakre test alene leverte fortsatt null
+bilder. **Bare bakkameraets test er fortsatt aktivert for oppstart.**
 Se [måleresultat og oppsett for neste forsøk](RESULTS-2026-10-08.md).
 
 Kandidatene omfatter følgende, når de er installert:

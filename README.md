@@ -17,8 +17,10 @@ kameratester ble startet ved første strømrunde. Fronten leverte 12 149 bilder
 over 607 sekunder; bakkameraet leverte null. Ved neste oppstart, med bare
 bakkameraets test aktivert, feilet identifikasjonen av begge sensorer allerede
 før testen startet (`SDA stuck at low`). Brukeren opplyste at strømavbrekket
-varte noen sekunder. Neste sammenligning beholder bare bakre test og bruker
-ryddig avslåing og et lengre strømavbrekk; årsaken er fortsatt uavklart.
+varte noen sekunder. Etter ryddig avslåing og ett minutt uten strøm ble begge
+sensorene gjenkjent igjen, men bakre test alene leverte fortsatt null bilder
+og feilet med tidsavbrudd. Årsaken er fortsatt uavklart; kamerakabel/kontakt
+og en kontrollert sammenligning med fungerende utstyr er foreslått neste steg.
 Se [oppsett og gjenoppretting](diagnostics/camera-isolation/README.md) og
 [den konkrete tjenestelisten](diagnostics/camera-isolation/INVENTORY.md).
 [Resultat og neste forsøk](diagnostics/camera-isolation/RESULTS-2026-10-08.md).

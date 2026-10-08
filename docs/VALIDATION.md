@@ -6,8 +6,9 @@ Bakkameraet leverte null bilder og feilet ved oppstart. Normal web-/robotdrift
 på Pi 5 er midlertidig stoppet for forsøket. Neste oppstart er klargjort med
 bare bakkameraet. Dette forsøket er deretter gjennomført: etter et kort
 strømavbrekk feilet identifikasjonen av begge sensorer før testprogrammet
-startet, med `SDA stuck at low`. Neste forsøk beholder bakre test alene og
-bruker lengre strømavbrekk. Se [full målerapport](../diagnostics/camera-isolation/RESULTS-2026-10-08.md).
+startet, med `SDA stuck at low`. Etter ryddig avslåing og ett minutt uten
+strøm ble begge sensorer gjenkjent igjen, men bakre test alene ga fortsatt
+null bilder og tidsavbrudd. Se [full målerapport](../diagnostics/camera-isolation/RESULTS-2026-10-08.md).
 Tabellene nedenfor dokumenterer tidligere prøver, ikke dagens tilgjengelighet.
 
 ## Testet på fysisk bil
