@@ -1,0 +1,26 @@
+[Unit]
+Description=Isolated %i camera observation (no robot control)
+After=local-fs.target
+Conflicts=robotcar@camera.service
+
+[Service]
+Type=notify
+User=pi
+SupplementaryGroups=video render
+WorkingDirectory=/opt/robotcar-camera-test
+ExecStart=/usr/bin/python3 -u /opt/robotcar-camera-test/capture.py %i
+ExecStopPost=/usr/bin/python3 /opt/robotcar-camera-test/record.py %i
+RuntimeDirectory=robotcar-camera-test
+RuntimeDirectoryPreserve=yes
+StateDirectory=robotcar-camera-test
+UMask=0077
+NotifyAccess=main
+WatchdogSec=15
+WatchdogSignal=SIGKILL
+TimeoutStartSec=30
+TimeoutStopSec=5
+KillMode=control-group
+Restart=no
+
+[Install]
+WantedBy=multi-user.target
