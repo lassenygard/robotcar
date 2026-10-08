@@ -1,5 +1,12 @@
 # Verifikasjon 2026-10-07
 
+**Senere kamerastatus, 8. oktober:** Etter kald oppstart med 107 valgfrie
+oppstartsenheter sperret leverte frontkameraet 12 149 bilder over 607,40 s.
+Bakkameraet leverte null bilder og feilet ved oppstart. Normal web-/robotdrift
+på Pi 5 er midlertidig stoppet for forsøket. Neste oppstart er klargjort med
+bare bakkameraet. Se [full målerapport](../diagnostics/camera-isolation/RESULTS-2026-10-08.md).
+Tabellene nedenfor dokumenterer tidligere prøver, ikke dagens tilgjengelighet.
+
 ## Testet på fysisk bil
 
 | Område | Resultat |

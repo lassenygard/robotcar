@@ -13,9 +13,12 @@ Bakkameraet leverte senere 1172 bilder, omtrent 59 sekunder, før det stoppet.
 **Fra 8. oktober kl. 16:58 er Pi 5 i midlertidig kamera-isolering:**
 107 valgfrie oppstartsenheter er sperret, inkludert vanlig robotvideo,
 AI, kartarbeider og webkontroll. SSH og nettverk er beholdt. To minimale
-kameratester starter automatisk; ny oppstart og observasjon gjenstår.
+kameratester ble startet ved kald oppstart. Fronten leverte 12 149 bilder over
+607 sekunder; bakkameraet leverte null. Neste oppstart er klargjort med bare
+bakkameraets test aktivert, for å undersøke samtidig kameraoppstart.
 Se [oppsett og gjenoppretting](diagnostics/camera-isolation/README.md) og
 [den konkrete tjenestelisten](diagnostics/camera-isolation/INVENTORY.md).
+[Resultat og neste forsøk](diagnostics/camera-isolation/RESULTS-2026-10-08.md).
 Fangstprosessene er isolert og overvåket; feilhåndteringen er prøvd med simulerte bilder.
 Innlogging, video, LiDAR og posisjon ble tidligere kontrollert gjennom
 HTTPS-domenet fra LAN; full innlogget ytelse fra mobilnett gjenstår.

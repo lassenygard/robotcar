@@ -11,7 +11,10 @@ opprinnelig startstatus og oppstartsmåte i
 `/var/lib/robotcar-camera-isolation/original.json` (bare tilgjengelig for root).
 Den konkrete listen over testkandidater finnes i feltet `units` og i
 [den lagrede tjenestelisten](INVENTORY.md): 107 enheter, hvorav 65 var aktive
-før isolering 8. oktober. Første omlegging er utført; ny oppstart gjenstår.
+før isolering 8. oktober. Første kalde oppstart er observert i ti minutter:
+frontkameraet virker, mens bakkameraet leverte null bilder.
+**Neste oppstart er klargjort med bare bakkameraets test aktivert.**
+Se [måleresultat og oppsett for neste forsøk](RESULTS-2026-10-08.md).
 
 Kandidatene omfatter følgende, når de er installert:
 
