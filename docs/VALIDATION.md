@@ -295,3 +295,31 @@ Ny måling gjennom HTTPS fra LAN ga WebSocket-median 22,9 ms, maks. 26,4 ms;
 den tidligere store forsinkelsen var ikke til stede i denne prøven.
 Motorsperren var fortsatt aktiv. Ingen aktiverings- eller kjørekommandoer
 ble sendt.
+
+## Frontkamera tilbake og separat prøve av bakkamera
+
+2026-10-08: frontkameraet kom tilbake ved oppstarten rundt kl. 07:53 CEST.
+Kl. 13:20 hadde fangstprosessen levert ca. 391 000 bilder ved 20 fps uten
+omstart. Fem ferske JPEG-bilder med stigende sekvensnummer ble også mottatt
+gjennom HTTPS. Objektgjenkjenningen rapporterte ingen feil, med inferens
+ca. 20 ms. Bakkameraet var gjenkjent som imx708_wide, men leverte ingen bilder.
+
+Forrige oppstart hadde sensor-ID-feil og `SDA stuck at low` for begge
+kameraer. Disse probe-feilene var borte i den nåværende oppstarten. Både
+Linux-kjernen (`6.12.47+rpt-rpi-2712`) og robotversjonen (`f246e55`) var
+uendret. Det er derfor ingen ny robotkode som forklarer gjenopprettingen;
+den nøyaktige fysiske eller oppstartsrelaterte årsaken er fortsatt ukjent.
+
+Kl. 13:22 ble kameratjenesten stoppet kort og bakkameraet prøvd alene med
+Picamera2, uten robotprogrammet eller frontkameraet. Standard preview-valg
+brukte sensor 1536×864, 10 bit og utgang 640×480, altså lavere sensoroppløsning
+enn i robotprogrammet. Også denne prøven ga `Camera frontend has timed out`
+og ingen bilder før den eksterne 15-sekundersfristen. Tjenesten ble startet
+igjen; frontkameraet leverte ferske bilder ved 20 fps. Ingen motorer ble brukt.
+
+Dette svekker hypotesen om konflikt mellom kameratjenestene eller for høy
+oppløsning. Kabel/kontakt, sensor og strøm/oppstart er aktuelle forklaringer,
+men driverfeil er ikke utelukket. Neste skilleprøve er fysisk kontroll og
+bytte av én kabel/port om gangen med strømmen frakoblet, for å se om feilen
+følger kabel, kameramodul eller Pi-port. Dette samsvarer med
+[Raspberry Pis feilsøkingsråd](https://www.raspberrypi.com/documentation/computers/camera_software.html#troubleshooting).
