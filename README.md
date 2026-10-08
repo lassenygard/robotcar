@@ -12,15 +12,14 @@ Frontkameraet har levert ca. 20 fps etter oppstarten 8. oktober.
 Bakkameraet leverte senere 1172 bilder, omtrent 59 sekunder, før det stoppet.
 **Fra 8. oktober kl. 16:58 er Pi 5 i midlertidig kamera-isolering:**
 107 valgfrie oppstartsenheter er sperret, inkludert vanlig robotvideo,
-AI, kartarbeider og webkontroll. SSH og nettverk er beholdt. To minimale
-kameratester ble startet ved første strømrunde. Fronten leverte 12 149 bilder
-over 607 sekunder; bakkameraet leverte null. Ved neste oppstart, med bare
-bakkameraets test aktivert, feilet identifikasjonen av begge sensorer allerede
-før testen startet (`SDA stuck at low`). Brukeren opplyste at strømavbrekket
-varte noen sekunder. Etter ryddig avslåing og ett minutt uten strøm ble begge
-sensorene gjenkjent igjen, men bakre test alene leverte fortsatt null bilder
-og feilet med tidsavbrudd. Årsaken er fortsatt uavklart; kamerakabel/kontakt
-og en kontrollert sammenligning med fungerende utstyr er foreslått neste steg.
+AI, kartarbeider og webkontroll. SSH og nettverk er beholdt. Etter at brukeren
+byttet kameramodulene mellom kablene, leverte IMX708 12 384 bilder over 619 s
+på den tidligere frontforbindelsen. IMX219 leverte 12 185 bilder på den
+tidligere bakre forbindelsen, men stoppet etter 609 s, før den andre testen
+ble startet. Begge sensortyper har dermed feilet på samme opprinnelige
+forbindelse. Neste test er klargjort med bare IMX708; foreslått fysisk endring
+er å bytte kabelpluggene ved Pi-en for å skille kabel fra kamerainngang.
+Årsaken er fortsatt uavklart, og samtidig drift er ikke verifisert.
 Se [oppsett og gjenoppretting](diagnostics/camera-isolation/README.md) og
 [den konkrete tjenestelisten](diagnostics/camera-isolation/INVENTORY.md).
 [Resultat og neste forsøk](diagnostics/camera-isolation/RESULTS-2026-10-08.md).

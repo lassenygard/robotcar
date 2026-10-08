@@ -11,12 +11,13 @@ opprinnelig startstatus og oppstartsmåte i
 `/var/lib/robotcar-camera-isolation/original.json` (bare tilgjengelig for root).
 Den konkrete listen over testkandidater finnes i feltet `units` og i
 [den lagrede tjenestelisten](INVENTORY.md): 107 enheter, hvorav 65 var aktive
-før isolering 8. oktober. Første kalde oppstart er observert i ti minutter:
-frontkameraet virket, mens bakkameraet leverte null bilder.
-Ved neste oppstart med bare bakre test feilet identifikasjonen av begge
-sensorene før testprogrammet startet. Etter ryddig avslåing og ett minutt
-uten strøm ble begge gjenkjent, men bakre test alene leverte fortsatt null
-bilder. **Bare bakkameraets test er fortsatt aktivert for oppstart.**
+før isolering 8. oktober. Etter bytte av kameramodulene mellom kablene
+fungerte IMX708 over ti minutter på den tidligere frontforbindelsen.
+IMX219 fungerte også ti minutter, men stoppet deretter på den tidligere
+bakre forbindelsen, før IMX708 ble startet igjen. Samtidig drift er ikke
+verifisert. **Bare IMX708 (tidligere bakkamera) er aktivert for oppstart.**
+Neste foreslåtte sammenligning bytter kabelpluggene ved Pi-en mens
+kameramodulene forblir koblet til samme kabler som nå.
 Se [måleresultat og oppsett for neste forsøk](RESULTS-2026-10-08.md).
 
 Kandidatene omfatter følgende, når de er installert:

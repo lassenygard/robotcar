@@ -1,14 +1,14 @@
 # Verifikasjon 2026-10-07
 
-**Senere kamerastatus, 8. oktober:** Etter kald oppstart med 107 valgfrie
-oppstartsenheter sperret leverte frontkameraet 12 149 bilder over 607,40 s.
-Bakkameraet leverte null bilder og feilet ved oppstart. Normal web-/robotdrift
-på Pi 5 er midlertidig stoppet for forsøket. Neste oppstart er klargjort med
-bare bakkameraet. Dette forsøket er deretter gjennomført: etter et kort
-strømavbrekk feilet identifikasjonen av begge sensorer før testprogrammet
-startet, med `SDA stuck at low`. Etter ryddig avslåing og ett minutt uten
-strøm ble begge sensorer gjenkjent igjen, men bakre test alene ga fortsatt
-null bilder og tidsavbrudd. Se [full målerapport](../diagnostics/camera-isolation/RESULTS-2026-10-08.md).
+**Senere kamerastatus, 8. oktober:** 107 valgfrie oppstartsenheter er sperret,
+inkludert normal web-/robotdrift på Pi 5. Etter at brukeren byttet kameraene
+mellom kablene, leverte IMX708 12 384 bilder over 619,10 s på tidligere
+frontforbindelse. IMX219 leverte 12 185 bilder, men stoppet etter 609,19 s
+på tidligere bakre forbindelse. Feilen kom omtrent 41 s før IMX708 ble
+startet igjen, så planlagt samtidig test ble ikke gjennomført. Bare IMX708
+er aktivert for neste oppstart; foreslått neste endring er å bytte pluggene
+ved Pi-en for å avgrense kabel mot kamerainngang.
+Se [full målerapport](../diagnostics/camera-isolation/RESULTS-2026-10-08.md).
 Tabellene nedenfor dokumenterer tidligere prøver, ikke dagens tilgjengelighet.
 
 ## Testet på fysisk bil
