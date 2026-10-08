@@ -16,9 +16,12 @@ AI, kartarbeider og webkontroll. SSH og nettverk er beholdt. Etter at brukeren
 byttet kameramodulene mellom kablene, leverte IMX708 12 384 bilder over 619 s
 på den tidligere frontforbindelsen. IMX219 leverte 12 185 bilder på den
 tidligere bakre forbindelsen, men stoppet etter 609 s, før den andre testen
-ble startet. Begge sensortyper har dermed feilet på samme opprinnelige
-forbindelse. Neste test er klargjort med bare IMX708; foreslått fysisk endring
-er å bytte kabelpluggene ved Pi-en for å skille kabel fra kamerainngang.
+ble startet. Etter at også kabelpluggene ved Pi-en ble byttet, feilet IMX708
+ved oppstart med null bilder. IMX219 feilet også med null bilder i en senere
+separat test i samme oppstart. Begge sensorer blir gjenkjent. Dette utpeker
+ikke entydig én defekt kabel eller Pi-inngang. Bare IMX708-testen er aktivert
+for neste oppstart; neste foreslåtte fysiske test er denne sensoren med kabelen
+og inngangen som fungerte sist, med det andre kameraet frakoblet Pi-en.
 Årsaken er fortsatt uavklart, og samtidig drift er ikke verifisert.
 Se [oppsett og gjenoppretting](diagnostics/camera-isolation/README.md) og
 [den konkrete tjenestelisten](diagnostics/camera-isolation/INVENTORY.md).
