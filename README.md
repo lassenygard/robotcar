@@ -13,9 +13,12 @@ Bakkameraet leverte senere 1172 bilder, omtrent 59 sekunder, før det stoppet.
 **Fra 8. oktober kl. 16:58 er Pi 5 i midlertidig kamera-isolering:**
 107 valgfrie oppstartsenheter er sperret, inkludert vanlig robotvideo,
 AI, kartarbeider og webkontroll. SSH og nettverk er beholdt. To minimale
-kameratester ble startet ved kald oppstart. Fronten leverte 12 149 bilder over
-607 sekunder; bakkameraet leverte null. Neste oppstart er klargjort med bare
-bakkameraets test aktivert, for å undersøke samtidig kameraoppstart.
+kameratester ble startet ved første strømrunde. Fronten leverte 12 149 bilder
+over 607 sekunder; bakkameraet leverte null. Ved neste oppstart, med bare
+bakkameraets test aktivert, feilet identifikasjonen av begge sensorer allerede
+før testen startet (`SDA stuck at low`). Brukeren opplyste at strømavbrekket
+varte noen sekunder. Neste sammenligning beholder bare bakre test og bruker
+ryddig avslåing og et lengre strømavbrekk; årsaken er fortsatt uavklart.
 Se [oppsett og gjenoppretting](diagnostics/camera-isolation/README.md) og
 [den konkrete tjenestelisten](diagnostics/camera-isolation/INVENTORY.md).
 [Resultat og neste forsøk](diagnostics/camera-isolation/RESULTS-2026-10-08.md).
