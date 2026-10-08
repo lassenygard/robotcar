@@ -23,6 +23,8 @@ class IsolationTests(unittest.TestCase):
         self.stack.enter_context(patch.object(isolation, 'dropin',
             lambda scope, name: self.root/scope/(name+'.d')/isolation.DROPIN))
         self.commands = self.stack.enter_context(patch.object(isolation, 'command'))
+        self.properties = self.stack.enter_context(patch.object(isolation, 'properties',
+            return_value={'ActiveState':'inactive'}))
         self.stack.enter_context(patch.object(isolation, 'close_desktop_sessions'))
         self.original = {'units': [
             {'scope':'system', 'name':'hailort.service', 'group':'A', 'original':{'ActiveState':'active','SubState':'running'}},
@@ -50,6 +52,13 @@ class IsolationTests(unittest.TestCase):
             isolation.apply(self.original, group)
             for item in self.original['units']:
                 self.assertEqual((self.gates/item['scope']/item['name']).exists(), item['group'] != group)
+
+    def test_running_candidate_prevents_test_start(self):
+        self.properties.return_value = {'ActiveState':'active'}
+        with patch.object(isolation.time, 'monotonic', side_effect=[0, 121]):
+            with self.assertRaisesRegex(RuntimeError, 'Units did not stop'):
+                isolation.apply(self.original, 'baseline')
+        self.assertFalse(any('enable' in call.args for call in self.commands.call_args_list))
 
     def test_custom_split_cannot_enable_fixed_capture_or_unknown_units(self):
         path = self.root/'allowed.json'

@@ -9,7 +9,9 @@ Motorer skal ikke kjøres. Pi 4 og motorenes eksisterende sperre beholdes.
 `control.py prepare` lagrer en full oversikt over system- og brukertjenester,
 opprinnelig startstatus og oppstartsmåte i
 `/var/lib/robotcar-camera-isolation/original.json` (bare tilgjengelig for root).
-Den konkrete listen over testkandidater finnes i feltet `units`.
+Den konkrete listen over testkandidater finnes i feltet `units` og i
+[den lagrede tjenestelisten](INVENTORY.md): 107 enheter, hvorav 65 var aktive
+før isolering 8. oktober. Første omlegging er utført; ny oppstart gjenstår.
 
 Kandidatene omfatter følgende, når de er installert:
 

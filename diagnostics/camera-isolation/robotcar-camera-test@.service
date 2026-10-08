@@ -1,7 +1,7 @@
 [Unit]
 Description=Isolated %i camera observation (no robot control)
 After=local-fs.target
-Conflicts=robotcar@camera.service
+ConditionPathExists=/etc/robotcar-camera-isolation/blocked/system/robotcar@camera.service
 
 [Service]
 Type=notify

@@ -170,7 +170,19 @@ def apply(original, phase, custom=None):
     for scope in ('user', 'system'):
         stopped = [e['name'] for e in original['units'] if e['scope'] == scope and scope+':'+e['name'] not in allow]
         if stopped:
-            command(scope, 'stop', *stopped)
+            # D-Bus/socket activation can replace a queued stop job. Conditions
+            # already block fresh starts; verify resulting states rather than
+            # treating a canceled intermediate job as the final outcome.
+            command(scope, 'stop', '--no-block', *stopped, check=False)
+            deadline = time.monotonic()+120
+            while True:
+                remaining = [name for name in stopped
+                             if properties(scope, name)['ActiveState'] not in ('inactive', 'failed')]
+                if not remaining:
+                    break
+                if time.monotonic() >= deadline:
+                    raise RuntimeError('Units did not stop: '+', '.join(remaining))
+                time.sleep(1)
     if 'system:lightdm.service' not in allow:
         close_desktop_sessions()
     command('system', 'enable', *TESTS)

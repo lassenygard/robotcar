@@ -8,9 +8,14 @@ Pi 4 sammen med en separat LiDAR-leser; kameraer, Hailo-8 og kartlegging kjører
 USB-kabelen ble flyttet til Pi 4. Omtrent 7 skanninger/s sendes til Pi 5.
 Et kart fra bilens stillestående plassering er lagret og lastet inn igjen;
 LiDAR og kameratrekk har tidligere bekreftet posisjonen i dette kartet.
-Frontkameraet er tilbake med ca. 20 fps og objektgjenkjenning etter oppstarten
-8. oktober. Bakkameraet blir oppdaget, men gir fortsatt ingen bilder, heller
-ikke i en separat prøve uten robotprogrammet. Fysisk kontroll gjenstår.
+Frontkameraet har levert ca. 20 fps etter oppstarten 8. oktober.
+Bakkameraet leverte senere 1172 bilder, omtrent 59 sekunder, før det stoppet.
+**Fra 8. oktober kl. 16:58 er Pi 5 i midlertidig kamera-isolering:**
+107 valgfrie oppstartsenheter er sperret, inkludert vanlig robotvideo,
+AI, kartarbeider og webkontroll. SSH og nettverk er beholdt. To minimale
+kameratester starter automatisk; ny oppstart og observasjon gjenstår.
+Se [oppsett og gjenoppretting](diagnostics/camera-isolation/README.md) og
+[den konkrete tjenestelisten](diagnostics/camera-isolation/INVENTORY.md).
 Fangstprosessene er isolert og overvåket; feilhåndteringen er prøvd med simulerte bilder.
 Innlogging, video, LiDAR og posisjon ble tidligere kontrollert gjennom
 HTTPS-domenet fra LAN; full innlogget ytelse fra mobilnett gjenstår.
