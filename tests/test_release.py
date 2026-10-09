@@ -17,7 +17,7 @@ class ReleaseTests(unittest.TestCase):
         self.source, self.root = Path(self.temp.name)/'source', Path(self.temp.name)/'installed'
         package = self.source/'robotcar'
         package.mkdir(parents=True)
-        for name in ('__init__', 'common', 'motor', 'camera', 'video', 'lidar', 'lidarfeed', 'vision', 'mapping', 'mapworker', 'navigation', 'webapp'):
+        for name in ('__init__', 'common', 'motor', 'camera', 'cameralink', 'video', 'lidar', 'lidarfeed', 'vision', 'mapping', 'mapworker', 'navigation', 'webapp'):
             (package/(name+'.py')).write_text('version = 1\n')
         self.first = release.stage_release(self.source, self.root)
         release.activate_release(self.first, self.root)

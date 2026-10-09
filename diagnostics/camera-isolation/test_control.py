@@ -91,6 +91,16 @@ class IsolationTests(unittest.TestCase):
             isolation.restore(self.original)
         self.assertEqual(path.read_text(), 'external change')
 
+    def test_runtime_stops_diagnostics_and_only_opens_robot_gates(self):
+        isolation.apply(self.original, 'baseline')
+        self.commands.reset_mock()
+        isolation.runtime(self.original)
+        self.commands.assert_any_call('system', 'disable', '--now', *isolation.TESTS)
+        self.assertFalse((self.gates/'system'/'robotcar@camera.service').exists())
+        self.assertFalse((self.gates/'system'/'hailort.service').exists())
+        self.assertTrue((self.gates/'system'/'lightdm.service').exists())
+        self.assertTrue((self.gates/'user'/'pipewire.socket').exists())
+
 
 if __name__ == '__main__':
     unittest.main()

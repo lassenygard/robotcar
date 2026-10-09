@@ -2,8 +2,11 @@
 import argparse
 import asyncio
 import contextlib
+import hmac
 import math
 import os
+import re
+import secrets
 import socket
 import struct
 import sys
@@ -11,12 +14,12 @@ import time
 from dataclasses import dataclass
 
 from aiohttp import web
-from .common import RUN, atomic_json
+from .common import RUN, atomic_json, secret
 
 
 SPECS = {
-    'front': ('imx219', (1640, 1232), False),
-    'rear': ('imx708', (2304, 1296), True),
+    'front': ('imx708', (2304, 1296), True),
+    'rear': ('imx219', (1640, 1232), False),
 }
 HEADER = struct.Struct('!dI')  # Capture-return monotonic time, payload length.
 MAX_FRAME_BYTES = 1024 * 1024
@@ -44,6 +47,7 @@ def capture(name):
     from picamera2 import Picamera2
     cv2.setNumThreads(1)
     model, size, rotate = SPECS[name]
+    rotate = os.environ.get('CAMERA_' + name.upper() + '_ROTATE_180', str(int(rotate))) == '1'
     camera = None
     try:
         camera = Picamera2(sensor_number(Picamera2.global_camera_info(), model))
@@ -178,6 +182,21 @@ class Camera:
             delay = min(RETRY_MAX, delay * 2)
 
 
+def configured_cameras():
+    from .cameralink import RemoteCamera
+    local = os.environ.get('CAMERA_LOCAL_ROLES', 'front,rear').split(',')
+    if not local or any(name not in SPECS for name in local) or len(local) != len(set(local)):
+        raise ValueError('CAMERA_LOCAL_ROLES must list distinct front/rear roles')
+    cameras = {name: Camera(name) for name in local}
+    for name in SPECS:
+        url = os.environ.get('CAMERA_' + name.upper() + '_URL')
+        if url:
+            if name in cameras:
+                raise ValueError('Camera cannot be both local and remote: ' + name)
+            cameras[name] = RemoteCamera(name, url)
+    return cameras
+
+
 def notify_watchdog():
     """Only the HTTP/supervisor process notifies systemd, never capture children."""
     address = os.environ.get('NOTIFY_SOCKET')
@@ -190,9 +209,18 @@ def notify_watchdog():
         sock.sendto(b'WATCHDOG=1', address)
 
 
-def create_app(cameras=None, start_workers=True):
-    cameras = cameras if cameras is not None else {name: Camera(name) for name in SPECS}
-    app = web.Application()
+def create_app(cameras=None, start_workers=True, auth_token=None):
+    cameras = cameras if cameras is not None else configured_cameras()
+    source_id = secrets.token_hex(16)
+
+    @web.middleware
+    async def authenticate(request, handler):
+        if auth_token and not hmac.compare_digest(
+                request.headers.get('Authorization', '').encode(), ('Bearer ' + auth_token).encode()):
+            raise web.HTTPUnauthorized()
+        return await handler(request)
+
+    app = web.Application(middlewares=[authenticate], client_max_size=4096)
 
     def get_frame(request):
         cam = cameras.get(request.match_info['camera'])
@@ -204,10 +232,16 @@ def create_app(cameras=None, start_workers=True):
         return cam, frame
 
     async def snapshot(request):
-        _, frame = get_frame(request)
+        cam, frame = get_frame(request)
+        nonce = request.query.get('nonce', '')
+        if auth_token and not re.fullmatch('[0-9a-f]{32}', nonce):
+            raise web.HTTPBadRequest(text='Missing camera request nonce')
         return web.Response(body=frame.jpeg, content_type='image/jpeg', headers={
             'Cache-Control': 'no-store', 'X-Frame-Sequence': str(frame.seq),
-            'X-Frame-Monotonic': str(frame.when)})
+            'X-Frame-Monotonic': str(frame.when),
+            'X-Frame-Age': str(time.monotonic() - frame.when),
+            'X-Camera-Source': source_id, 'X-Camera-Nonce': nonce,
+            'X-Camera-Model': SPECS[cam.name][0], 'X-Camera-Role': cam.name})
 
     async def stream(request):
         cam, _ = get_frame(request)
@@ -269,4 +303,6 @@ if __name__ == '__main__':
     if args.capture:
         capture(args.capture)
     else:
-        web.run_app(create_app(), host='127.0.0.1', port=8800, access_log=None)
+        host = os.environ.get('CAMERA_BIND', '127.0.0.1')
+        token = secret() if host not in ('127.0.0.1', '::1', 'localhost') else None
+        web.run_app(create_app(auth_token=token), host=host, port=8800, access_log=None)

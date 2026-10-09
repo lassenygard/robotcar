@@ -9,7 +9,7 @@ install -d -m 755 /opt/robotcar
 install -d -o pi -g pi -m 700 /run/robotcar /var/lib/robotcar
 release_dir="$(python3 "$source_dir/deploy/release.py" stage "$source_dir")"
 if [ "$role" = motor ]; then
-    systemctl stop robotcar-motor robotcar@lidar robotcar@lidarfeed
+    systemctl stop robotcar-motor robotcar@lidar robotcar@lidarfeed robotcar@camera
 else
     systemctl stop robotcar@camera robotcar@vision robotcar@lidar robotcar@mapworker robotcar@webapp
 fi
@@ -20,7 +20,7 @@ for unit in robotcar-motor.service robotcar@.service; do
     mv "/etc/systemd/system/.$unit.next" "/etc/systemd/system/$unit"
 done
 sync -f /etc/systemd/system
-if [ "$role" = sensors ]; then
+if [ "$role" = sensors ] || grep -qx 'CAMERA_FEED_ENABLED=1' /etc/robotcar/robotcar.env; then
     camera_dropin=/etc/systemd/system/robotcar@camera.service.d
     install -d -m 755 "$camera_dropin"
     install -m 644 "$release_dir/deploy/robotcar-camera-watchdog.conf" "$camera_dropin/.10-watchdog.conf.next"
@@ -41,6 +41,12 @@ if [ "$role" = motor ]; then
         systemctl start robotcar@lidar robotcar@lidarfeed
     else
         systemctl disable --now robotcar@lidar robotcar@lidarfeed
+    fi
+    if grep -qx 'CAMERA_FEED_ENABLED=1' /etc/robotcar/robotcar.env; then
+        systemctl enable robotcar@camera
+        systemctl start robotcar@camera
+    else
+        systemctl disable --now robotcar@camera
     fi
 else
     systemctl enable robotcar@camera robotcar@vision robotcar@lidar robotcar@mapworker robotcar@webapp

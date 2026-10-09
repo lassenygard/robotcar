@@ -195,6 +195,23 @@ def apply(original, phase, custom=None):
         command('system', 'start', '--no-block', *TESTS)
 
 
+def runtime(original):
+    """End capture-only trials and permit robot workers; retain desktop isolation."""
+    selected = [e for e in original['units'] if e['scope'] == 'system'
+                and e['name'] in SYSTEM_A + FIXED]
+    for entry in selected:
+        path = dropin('system', entry['name'])
+        if path.exists() and path.read_text() != condition('system', entry['name']):
+            raise RuntimeError('Isolation drop-in changed externally: ' + str(path))
+    command('system', 'disable', '--now', *TESTS)
+    for entry in selected:
+        (GATES/'system'/entry['name']).unlink(missing_ok=True)
+    write_json(ROOT/'phase.json', {'phase':'robot-runtime', 'applied_at':time.time(),
+        'allowed':['system:'+e['name'] for e in selected],
+        'note':'Normal robot video/AI/web permitted; other isolation gates retained.'})
+    command('system', 'start', '--no-block', *(e['name'] for e in selected))
+
+
 def restore(original):
     command('system', 'disable', '--now', *TESTS)
     for entry in original['units']:
@@ -246,7 +263,7 @@ def status(original):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('operation', choices=('prepare', 'baseline', 'A', 'B', 'custom', 'restore', 'status'))
+    parser.add_argument('operation', choices=('prepare', 'baseline', 'A', 'B', 'custom', 'runtime', 'restore', 'status'))
     parser.add_argument('--allow-file')
     args = parser.parse_args()
     if os.geteuid() != 0:
@@ -258,6 +275,8 @@ def main():
     original = json.loads((ROOT/'original.json').read_text())
     if args.operation == 'restore':
         restore(original)
+    elif args.operation == 'runtime':
+        runtime(original)
     elif args.operation != 'status':
         apply(original, args.operation, args.allow_file)
     print(json.dumps(status(original), indent=2))
