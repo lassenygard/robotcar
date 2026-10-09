@@ -2,6 +2,11 @@
 
 ## Gjeldende status 2026-10-09
 
+**Oppdatering etter batteribytte samme kveld:** begge Pi-er varsler lav spenning;
+begge kameraer og LiDAR leverer null data. Motorsperren er beholdt, og ingen
+bevegelsesprøve er utført. Resultatene nedenfor gjelder vanlig strømforsyning;
+se batteriprøven i [målerapporten](../diagnostics/camera-isolation/RESULTS-2026-10-09.md).
+
 IMX708 på Pi 5 er nå frontkamera med lokal AI. IMX219 på Pi 4 er bakkamera
 med autentisert bildeoverføring til Pi 5. Begge besto langtestene (henholdsvis
 9 t 25 min og 5 t 1 min) og kjører nå i vanlig robotdrift. LiDAR, webvideo,

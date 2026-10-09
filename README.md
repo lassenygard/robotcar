@@ -25,8 +25,12 @@ Se [resultatene fra kamerafordelingen](diagnostics/camera-isolation/RESULTS-2026
 [oppsett og gjenoppretting](diagnostics/camera-isolation/README.md) og
 [historikken fra kabelforsøkene](diagnostics/camera-isolation/RESULTS-2026-10-08.md).
 
-Begge Pi-er kjører nå på vanlig strømforsyning uten registrert lav spenning
-i denne oppstarten. **Motorene er sperret fordi bilen er tilkoblet kabler.**
+**Senere batteriprøve samme kveld:** etter kontrollert avslåing og overgang til
+fulladet batteri varsler begge Pi-er igjen lav spenning. Pi 5 måler 4,66–4,70 V;
+ingen av kameraene eller LiDAR leverer data. Resultatene ovenfor gjelder
+vanlig strømforsyning. **Motorene forblir sperret på grunn av sensorfeilene.**
+Ingen hjulkommandoer er sendt etter denne overgangen; fysisk rotasjon venter
+på stabil strøm og fungerende sensorer. Se slutten av målerapporten.
 Den tidligere batteritimeren er deaktivert. Full leilighetskartlegging,
 rotasjon for gjenkjenning, go-to og vaktrunder gjenstår å prøve fysisk etter
 kalibrering og frakobling av kablene. Kode og dokumentasjon er publisert på
