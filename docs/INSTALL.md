@@ -8,7 +8,7 @@ eller kamera-/Hailo-bibliotekene med tilfeldige pip-versjoner: de inneholder
 native koblinger til den installerte driveren.
 
 Pi 4 trenger `python3-gpiozero`, `python3-rpi.gpio`, `python3-serial` og
-`python3-aiohttp`. Pi 5 trenger
+`python3-aiohttp`, `python3-picamera2` og `python3-numpy`. Pi 5 trenger
 `python3-picamera2`, `python3-opencv`, `python3-numpy`, `python3-scipy`,
 `python3-serial`, `python3-aiohttp` og den fungerende HailoRT-installasjonen.
 Det målte Hailo-8-oppsettet bruker firmware/runtime 4.20.0.
@@ -56,6 +56,30 @@ Samme interne token brukes på begge. Motorinstallasjonen starter også
 `robotcar@lidar` og `robotcar@lidarfeed` når feed-flagget er 1.
 Kartbehandlingen forblir på Pi 5; Pi 4 gjør bare innlesing og videresending.
 
+Kameraene er fordelt mellom maskinene. Pi 4 har IMX219 som bakkamera:
+
+```ini
+CAMERA_LOCAL_ROLES=rear
+CAMERA_BIND=192.168.4.43
+CAMERA_FEED_ENABLED=1
+CAMERA_REAR_ROTATE_180=1
+```
+
+Pi 4 skal ikke ha `CAMERA_REAR_URL`. Pi 5 har IMX708 som frontkamera:
+
+```ini
+CAMERA_LOCAL_ROLES=front
+CAMERA_BIND=127.0.0.1
+CAMERA_REAR_URL=http://192.168.4.43:8800
+CAMERA_FRONT_ROTATE_180=0
+```
+
+Bakvideo over lokalnettet bruker samme interne token som LiDAR og motorer.
+Bare frontbildet analyseres av Hailo. Stopp eventuelle diagnostiske kameratester
+før ordinær kameratjeneste startes. Pi 5 står i isoleringsverktøyets `runtime`-fase:
+seks robot-/Hailo-enheter er tillatt, 101 andre oppstartssperrer er beholdt.
+Se [isoleringsverktøyet](../diagnostics/camera-isolation/README.md).
+
 Etter strømbruddet 2026-10-06 inneholdt den gamle Pi 5-installasjonen tomme filer
 og nullbytes. Oppdateringer legges derfor nå i en ny mappe under
 `/opt/robotcar/releases`. Alle filer kontrolleres med SHA-256 og skrives til
@@ -97,9 +121,10 @@ Det aktive oppsettet har `MOTOR_SWAP_SIDES=1` og negativ polaritet på de to
 utgangene med det gamle navnet `*_right`. Fronten er kameraet som ser de svarte
 kjøkkenskapene. Sidelengs/mecanum-kommandoer finnes ikke i det nye grensesnittet.
 
-Begge kameraretninger er undersøkt. Front er imx219, kamera 0; bak er
-imx708_wide, kamera 1, rotert 180 grader i programvaren. Sensorene bruker hele
-synsfeltet via 1640×1232 og 2304×1296 før nedskalering til 640×480.
+Begge kameraretninger er undersøkt etter flyttingen 9. oktober. Front er
+IMX708 wide på Pi 5 uten programvarerotasjon; bak er IMX219 på Pi 4 med
+180 graders rotasjon. Sensorene bruker henholdsvis 2304×1296 og 1640×1232
+før nedskalering til 640×480. Kameranummer er ikke en stabil identifikator.
 
 Kameraene velges etter sensormodell, ikke skiftende kameranummer. Hvert kamera
 har en egen fangstprosess. Etter ett sekund uten ferske bilder returnerer
@@ -108,7 +133,7 @@ låser seg blir avsluttet og startet på nytt uten å avbryte det andre kameraet
 Første bilde har 10 sekunders oppstartsfrist; senere bilder har 3 sekunder.
 Gjentatte feil gir gradvis lengre pause mellom forsøk, opptil 30 sekunder.
 
-Sensorinstallasjonen legger en egen åttesekunders systemd-watchdog på
+Begge installasjonsrollene legger en egen åttesekunders systemd-watchdog på
 `robotcar@camera`. Den passer på HTTP-serveren og overvåkingen av
 fangstprosessene; de andre robotcar-tjenestene får ingen slik watchdog.
 En vedvarende maskinvarefeil vises som utilgjengelig kamera mens øvrige

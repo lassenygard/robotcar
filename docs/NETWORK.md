@@ -20,6 +20,7 @@ Nettleser -- HTTPS/WSS --> eksisterende edge/reverse proxy
                            -- privat LAN --> 192.168.4.44:8080
                                               -- token --> 192.168.4.43:5001
                                               <-- token -- 192.168.4.43:8801/scan
+                                              <-- token -- 192.168.4.43:8800/snapshot/rear
 ```
 
 HTTP omdirigeres til HTTPS. WebSocket-oppgradering er satt opp, og proxybuffering
@@ -41,12 +42,18 @@ Uinnlogget video og WebSocket ga 401 fra eksterne noder i Ungarn, Moldova,
 Nederland og Tyrkia. Ingen innloggingsinformasjon ble sendt til testtjenesten.
 Reell innlogget video- og styreforsinkelse fra mobilnett gjenstår å måle.
 
+Etter kamerafordelingen 9. oktober ble begge strømmer og WebSocket prøvd
+samtidig i 60 sekunder gjennom domenet fra LAN: 18,8 bilder/s foran og
+16,8 bak, median rundtur 81,8 ms og ingen kamerafeil. Konservativ bildealder
+ved mottak var median 104,5/164,9 ms foran/bak; skjermvisning inngår ikke.
+Se [full rapport](../diagnostics/camera-isolation/RESULTS-2026-10-09.md).
+
 Etter overgang til vanlig strømforsyning 2026-10-07 er begge Pi-er tilbake.
 Innlogging, video, WebSocket, ekte LiDAR-data og kartposisjon er kontrollert
 gjennom domenet fra LAN. Målt median WebSocket-rundtur var 25,3 ms, maks. 60,9 ms.
 Samtidig mottak av begge videostrømmer ga 13,2 og 6,3 fps i denne prøven;
 kameraprosessene produserte fortsatt ca. 20 fps. Dette skiller faktisk mottak
-gjennom nettverket fra kameraenes opptaksrate. Videoalder er ennå ikke målt.
+gjennom nettverket fra kameraenes opptaksrate. Videoalder ble ikke målt i den prøven.
 
 LiDAR-ens USB-kabel står i Pi 4. En egen HTTP-tjeneste på privat port 8801
 krever `ROBOTCAR_TOKEN`; uautorisert forespørsel er kontrollert og gir 401.
@@ -58,8 +65,13 @@ ga ferske skanninger og målt gjenlokalisering igjen.
 Motortjenesten er med hensikt stoppet og sperret mens bilen står i strømkabler.
 Nettsiden viser derfor motorforbindelsen som frakoblet i denne driftsformen.
 
-Ikke videresend Pi 4 sine porter 5001/8801 eller Pi 5 sine interne sensorporter
-8800/8810 til Internett. Sensorportene lytter bare på 127.0.0.1. Ikke publiser
+Pi 4 leverer nå også bakvideo på port 8800 med obligatorisk token. Pi 5
+validerer kilde, sekvens, rolle og forespørsel før et bilde tas imot; gamle
+bilder kan ikke bli ferske gjennom gjentatte svar.
+
+Ikke videresend Pi 4 sine porter 5001/8800/8801 eller Pi 5 sine interne sensorporter
+8800/8810 til Internett. Pi 5 sine sensorporter lytter bare på 127.0.0.1;
+Pi 4 sine feeder lytter på privat LAN-adresse og krever token. Ikke publiser
 8080 som ukryptert erstatning for HTTPS; kamera og kontroll krever kryptert
 innlogging når trafikken går utenfor lokalnettet.
 

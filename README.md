@@ -2,33 +2,28 @@
 
 Robotcar har et innlogget kontrollpanel med to kameravisninger, rask manuell
 styring, kartvisning og navigasjonskontroller. Motorstyring kjører isolert på
-Pi 4 sammen med en separat LiDAR-leser; kameraer, Hailo-8 og kartlegging kjører på Pi 5.
+Pi 4 sammen med en separat LiDAR-leser og bakkameraet. Frontkamera, Hailo-8,
+kartlegging og webkontroll kjører på Pi 5.
 
-**Status 2026-10-08:** RPLiDAR fungerer med vanlig seriell lesing etter at
+**Status 2026-10-09:** RPLiDAR fungerer med vanlig seriell lesing etter at
 USB-kabelen ble flyttet til Pi 4. Omtrent 7 skanninger/s sendes til Pi 5.
 Et kart fra bilens stillestående plassering er lagret og lastet inn igjen;
-LiDAR og kameratrekk har tidligere bekreftet posisjonen i dette kartet.
-Frontkameraet har levert ca. 20 fps etter oppstarten 8. oktober.
-Bakkameraet leverte senere 1172 bilder, omtrent 59 sekunder, før det stoppet.
-**Fra 8. oktober kl. 16:58 er Pi 5 i midlertidig kamera-isolering:**
-107 valgfrie oppstartsenheter er sperret, inkludert vanlig robotvideo,
-AI, kartarbeider og webkontroll. SSH og nettverk er beholdt. Etter at brukeren
-byttet kameramodulene mellom kablene, leverte IMX708 12 384 bilder over 619 s
-på den tidligere frontforbindelsen. IMX219 leverte 12 185 bilder på den
-tidligere bakre forbindelsen, men stoppet etter 609 s, før den andre testen
-ble startet. Etter at også kabelpluggene ved Pi-en ble byttet, feilet IMX708
-ved oppstart med null bilder. IMX219 feilet også med null bilder i en senere
-separat test i samme oppstart. Begge sensorer blir gjenkjent. Dette utpeker
-ikke entydig én defekt kabel eller Pi-inngang. Bare IMX708-testen er aktivert
-for neste oppstart; neste foreslåtte fysiske test er denne sensoren med kabelen
-og inngangen som fungerte sist, med det andre kameraet frakoblet Pi-en.
-Årsaken er fortsatt uavklart, og samtidig drift er ikke verifisert.
-Se [oppsett og gjenoppretting](diagnostics/camera-isolation/README.md) og
-[den konkrete tjenestelisten](diagnostics/camera-isolation/INVENTORY.md).
-[Resultat og neste forsøk](diagnostics/camera-isolation/RESULTS-2026-10-08.md).
-Fangstprosessene er isolert og overvåket; feilhåndteringen er prøvd med simulerte bilder.
-Innlogging, video, LiDAR og posisjon ble tidligere kontrollert gjennom
-HTTPS-domenet fra LAN; full innlogget ytelse fra mobilnett gjenstår.
+LiDAR og kameratrekk har bekreftet posisjonen på nytt med IMX708-referanse
+etter lagring og innlasting. Fysisk 360-graders rotasjon er ikke prøvd ennå.
+IMX708 på Pi 5 er nå frontkamera mot kjøkkenøyen; IMX219 på Pi 4 er bakkamera.
+De minimale langtestene ble avsluttet kontrollert etter henholdsvis 9 t 26 min
+og 5 t 1 min uten kamerastopp. Vanlig video, AI, LiDAR-mottak, kartarbeider
+og webkontroll er gjenopprettet. Bare frontkameraet analyseres av AI.
+De øvrige 101 bakgrunnsenhetene på Pi 5 er fortsatt sperret mens vi verifiserer
+robotdriften. De gamle testkameraene starter ikke ved omstart.
+Fangstprosesser overvåkes hver for seg. Kontrollert bortfall av Pi 4-kameraet
+ga feil/503 for bakvideo, uten å avbryte frontkameraet, og bakvideo kom tilbake
+automatisk da kilden startet igjen.
+Innlogging, begge videostrømmer, LiDAR og posisjon er kontrollert gjennom
+HTTPS-domenet fra LAN. Faktisk innlogget ytelse fra mobilnett gjenstår å bekrefte.
+Se [resultatene fra kamerafordelingen](diagnostics/camera-isolation/RESULTS-2026-10-09.md),
+[oppsett og gjenoppretting](diagnostics/camera-isolation/README.md) og
+[historikken fra kabelforsøkene](diagnostics/camera-isolation/RESULTS-2026-10-08.md).
 
 Begge Pi-er kjører nå på vanlig strømforsyning uten registrert lav spenning
 i denne oppstarten. **Motorene er sperret fordi bilen er tilkoblet kabler.**
@@ -63,8 +58,8 @@ Ingen automatisk tur starter ved oppstart eller etter nettverksbrudd.
 
 | Enhet | Oppgaver | Tjenester |
 |---|---|---|
-| Pi 4, `192.168.4.43` | USB-LiDAR og skanneoverføring; separat GPIO-prosess med tidsgrense/stopp | `robotcar@lidar`, `@lidarfeed`, `robotcar-motor` (sperret) |
-| Pi 5, `192.168.4.44` | To CSI-kameraer, Hailo-8, mottak av LiDAR, kartmatching og webkontroll | `robotcar@camera`, `@vision`, `@lidar`, `@mapworker`, `@webapp` |
+| Pi 4, `192.168.4.43` | IMX219 bakkamera, USB-LiDAR og skanneoverføring; separat GPIO-prosess med tidsgrense/stopp | `robotcar@camera`, `@lidar`, `@lidarfeed`, `robotcar-motor` (sperret) |
+| Pi 5, `192.168.4.44` | IMX708 frontkamera, mottak av bakvideo, Hailo-8 på frontbildet, LiDAR-mottak, kartmatching og webkontroll | `robotcar@camera`, `@vision`, `@lidar`, `@mapworker`, `@webapp` |
 | Eksisterende edge, `192.168.4.58` | HTTPS og videresending av video/WebSocket til Pi 5 | nginx, certbot |
 
 Kontrollkommandoer går over en egen WebSocket og en autentisert TCP-forbindelse
@@ -75,9 +70,14 @@ LiDAR-overføringen krever det interne tokenet og henter bare siste skanning.
 Målingens alder inkluderer hele nettverksrundturen; gjentatte, gamle eller
 ugyldige svar blir ikke godkjent som nye målinger. Ved forbindelsesbrudd
 blir posisjonen ukjent.
+Bakvideo hentes fra Pi 4 sin tokenbeskyttede port 8800. Hvert svar knyttes til
+en ny forespørsel, sensormodell, kamerarolle, kilde-ID og bildenummer. Kildens
+bildealder pluss hele nettverksrundturen brukes som konservativ alder; maskinenes
+monotone klokker sammenlignes aldri direkte. Gjentatte bilder blir ikke fornyet.
 
-Lokalt ble begge kameraene målt til omtrent **20 fps**, nettleserens rundtur til
-**17–33 ms**, og Hailo-inferens til omtrent **30 ms**. Dette er lokalnett-målinger,
+Kameraene produserer omtrent **20 fps**. Med begge HTTPS-strømmer og kontroll
+samtidig i 60 sekunder ble mottaket målt til **18,8/16,8 fps**, median kontrollrundtur
+**81,8 ms** og Hailo-inferens i en separat prøve til **20,7 ms**. Dette er lokalnett-målinger,
 ikke en garanti for forsinkelsen over Internett. MJPEG ved 640×480 prioriterer
 enkel, kort bufring; båndbredde og videoalder må måles på den endelige nettruten.
 

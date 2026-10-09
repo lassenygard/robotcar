@@ -1,4 +1,16 @@
-# Verifikasjon 2026-10-07
+# Verifikasjon
+
+## Gjeldende status 2026-10-09
+
+IMX708 på Pi 5 er nå frontkamera med lokal AI. IMX219 på Pi 4 er bakkamera
+med autentisert bildeoverføring til Pi 5. Begge besto langtestene (henholdsvis
+9 t 25 min og 5 t 1 min) og kjører nå i vanlig robotdrift. LiDAR, webvideo,
+WebSocket og stillestående gjenlokalisering med ny IMX708-referanse er testet.
+Motorene er fortsatt sperret. Innlogget mobilnettprøve og fysisk 360-graders
+rotasjon gjenstår. Se [målerapport 9. oktober](../diagnostics/camera-isolation/RESULTS-2026-10-09.md)
+for testdekning, målinger og begrensninger.
+
+## Historikk 7.–8. oktober
 
 **Senere kamerastatus, 8. oktober:** 107 valgfrie oppstartsenheter er sperret,
 inkludert normal web-/robotdrift på Pi 5. Etter at brukeren byttet kameraene

@@ -11,14 +11,13 @@ opprinnelig startstatus og oppstartsmåte i
 `/var/lib/robotcar-camera-isolation/original.json` (bare tilgjengelig for root).
 Den konkrete listen over testkandidater finnes i feltet `units` og i
 [den lagrede tjenestelisten](INVENTORY.md): 107 enheter, hvorav 65 var aktive
-før isolering 8. oktober. Etter bytte av kameramodulene mellom kablene
-fungerte IMX708 over ti minutter på den tidligere frontforbindelsen.
-IMX219 fungerte også ti minutter, men stoppet deretter på den tidligere
-bakre forbindelsen, før IMX708 ble startet igjen. Samtidig drift er ikke
-verifisert. **Bare IMX708 (tidligere bakkamera) er aktivert for oppstart.**
-Neste foreslåtte sammenligning bytter kabelpluggene ved Pi-en mens
-kameramodulene forblir koblet til samme kabler som nå.
-Se [måleresultat og oppsett for neste forsøk](RESULTS-2026-10-08.md).
+før isolering 8. oktober. Kabelforsøkene er beskrevet i
+[rapporten fra 8. oktober](RESULTS-2026-10-08.md).
+**9. oktober er minimaltestene avsluttet etter stabil drift med ett kamera
+per Pi.** IMX708 er nå frontkamera på Pi 5, IMX219 bakkamera på Pi 4.
+Fasen `robot-runtime` tillater de seks robot-/Hailo-enhetene og beholder
+de øvrige 101 sperrene. Normal video/AI/web kjører igjen.
+Se [oppdatert resultat](RESULTS-2026-10-09.md).
 
 Kandidatene omfatter følgende, når de er installert:
 
@@ -39,7 +38,7 @@ Vi bruker ekstra startvilkår som sperre; eksisterende enhetsfiler og
 oppstartslenker beholdes. En sperret tjeneste kan derfor fortsatt stå som
 `enabled`, men starter ikke så lenge sperrefilen finnes.
 
-Under grunnforsøket er vanlig robotvideo, AI, kartoppdateringer og webkontroll
+Under fasen `baseline` er vanlig robotvideo, AI, kartoppdateringer og webkontroll
 på Pi 5 stoppet. LiDAR på Pi 4 fortsetter. SSH er tilgjengelig på port 2222.
 
 ## Installasjon og første forsøk
@@ -75,8 +74,8 @@ en gammel ti-minuttersrapport betyr ikke at kameraet fortsatt virker.
 
 ## Sammenligning og halvering
 
-Observer minst ti minutter etter omstart. Det siste kjente bakre kamerautfallet
-kom etter omtrent 59 sekunder med bilder. Gjenta oppstart og observasjon før
+Observer lenger enn tidligere feilvindu etter omstart. IMX219 feilet ved ett
+forsøk etter 609 sekunder; ti minutter er derfor ikke tilstrekkelig. Gjenta oppstart og observasjon før
 en gruppe friskmeldes, siden feilen tidligere har vært periodisk.
 
 ```sh
@@ -130,6 +129,18 @@ Systemd-vakten avslutter prosessen dersom nye bilder uteblir. Ti-minutters-
 og stopprapporter lagres på samme steder som på Pi 5.
 
 ## Gjenoppretting
+
+Når vanlig robotdrift skal tilbake med øvrige bakgrunnstjenester fortsatt
+sperret, installer/verifiser ønsket runtime og kamerakonfigurasjon først:
+
+```sh
+sudo python3 /opt/robotcar-camera-test/control.py runtime
+```
+
+Dette stopper/deaktiverer de gamle Pi 5-kameratestene og åpner bare sperrene
+for kamera, AI, LiDAR-mottak, kartarbeider, web og Hailo. Langtesten på Pi 4
+stoppes separat før `robotcar@camera` startes der. Full gjenoppretting av
+den tidligere skrivebords-/bakgrunnsdriften gjøres fortsatt med:
 
 ```sh
 sudo python3 /opt/robotcar-camera-test/control.py restore
