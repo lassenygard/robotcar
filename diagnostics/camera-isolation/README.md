@@ -111,6 +111,24 @@ Vi må ikke friskmelde AI eller selve kameraprogrammet ut fra tomgangstester.
 Hvis grunnforsøket feiler, gjenstår blant annet drivere, strøm og maskinvare;
 det beviser ikke alene at kamera eller kabel er defekt.
 
+## Langtest av IMX219 på Pi 4
+
+Når IMX219 er koblet til Pi 4, kan samme bildebaserte vakt brukes uten å
+stanse LiDAR-tjenestene. Installer `capture.py`, `record.py` og
+`robotcar-camera-pi4-long-test.service` på samme måte som testfilene ovenfor.
+Start testen manuelt:
+
+```sh
+sudo systemctl start robotcar-camera-pi4-long-test.service
+sudo cat /run/robotcar-camera-test/front.json
+```
+
+Tjenesten er med hensikt ikke aktivert for automatisk oppstart og starter
+ikke automatisk på nytt etter en feil. Den tar 640 × 480 RGB ved 20 bilder/s,
+lagrer ingen bilder og bruker verken nettverk, LiDAR eller motorstyring.
+Systemd-vakten avslutter prosessen dersom nye bilder uteblir. Ti-minutters-
+og stopprapporter lagres på samme steder som på Pi 5.
+
 ## Gjenoppretting
 
 ```sh
