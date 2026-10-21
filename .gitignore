@@ -9,6 +9,9 @@ data/
 *.hef
 *.npz
 *.jpg
+*.mp4
+*.mkv
+*.avi
 *.pem
 *.key
 .pytest_cache/

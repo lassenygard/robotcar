@@ -39,7 +39,18 @@ class RPLidar:
         self.serial.write(bytes([0xA5, value]))
 
     def start(self):
+        # Recover a previous incomplete stream with the A1 motor stopped. RESET
+        # emits a boot banner; let it finish and discard it before GET_HEALTH.
+        # This order also worked on the physical unit after plain STOP/START
+        # returned no bytes. Spinning up before SCAN avoids a startup stall.
+        self.serial.dtr = True
+        self.serial.rts = True
+        self.command(0x25)
+        self.command(0x40)
+        time.sleep(2)
+        self.serial.reset_input_buffer()
         self.serial.dtr = False
+        time.sleep(2)
         self.command(0x25)
         time.sleep(.15)
         self.serial.reset_input_buffer()
@@ -57,20 +68,29 @@ class RPLidar:
     def scans(self):
         buffer, scan = bytearray(), []
         last = time.monotonic()
+        received, packets, revolutions, largest = 0, 0, 0, 0
         while True:
-            buffer.extend(self.serial.read(max(1, min(self.serial.in_waiting, 4096))))
+            data = self.serial.read(max(1, min(self.serial.in_waiting, 4096)))
+            received += len(data)
+            buffer.extend(data)
             if time.monotonic() - last > 2:
-                raise TimeoutError('No complete LiDAR revolution for two seconds')
+                raise TimeoutError('No complete LiDAR revolution for two seconds '
+                    f'(bytes={received}, packets={packets}, revolutions={revolutions}, '
+                    f'max_points={max(largest, len(scan))})')
             while len(buffer) >= 5:
                 packet = decode_packet(buffer[:5])
                 if packet is None:
                     del buffer[0]
                     continue
                 del buffer[:5]
+                packets += 1
                 new, quality, angle, distance = packet
                 if new:
+                    revolutions += 1
+                    largest = max(largest, len(scan))
                     if len(scan) >= 60:
                         last = time.monotonic()
+                        received, packets, revolutions, largest = 0, 0, 0, 0
                         yield scan
                     scan = []
                 if quality and .12 <= distance <= 8:

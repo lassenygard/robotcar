@@ -5,6 +5,14 @@ styring, kartvisning og navigasjonskontroller. Motorstyring kjører isolert på
 Pi 4 sammen med en separat LiDAR-leser og bakkameraet. Frontkamera, Hailo-8,
 kartlegging og webkontroll kjører på Pi 5.
 
+**Status 2026-10-21:** Ny 5 V-omformer er montert, og begge kameraer leverer
+bilder igjen. Etter brukerens beskjed om separat motorforsyning er framover,
+bakover og begge rotasjonsretninger prøvd med korte pulser gjennom
+webkontrollen. Fire separate MP4-opptak er levert privat i chatten.
+Pi 4 varsler fortsatt periodevis lav spenning, LiDAR leverer ikke skanninger,
+og bakutsynet er tildekket. Autonomi og full 360-graders gjenlokalisering
+gjenstår. Se [ny målerapport](diagnostics/camera-isolation/RESULTS-2026-10-21.md).
+
 **Status 2026-10-09:** RPLiDAR fungerer med vanlig seriell lesing etter at
 USB-kabelen ble flyttet til Pi 4. Omtrent 7 skanninger/s sendes til Pi 5.
 Et kart fra bilens stillestående plassering er lagret og lastet inn igjen;
@@ -62,7 +70,7 @@ Ingen automatisk tur starter ved oppstart eller etter nettverksbrudd.
 
 | Enhet | Oppgaver | Tjenester |
 |---|---|---|
-| Pi 4, `192.168.4.43` | IMX219 bakkamera, USB-LiDAR og skanneoverføring; separat GPIO-prosess med tidsgrense/stopp | `robotcar@camera`, `@lidar`, `@lidarfeed`, `robotcar-motor` (sperret) |
+| Pi 4, `192.168.4.43` | IMX219 bakkamera, USB-LiDAR og skanneoverføring; separat GPIO-prosess med tidsgrense/stopp | `robotcar@camera`, `@lidar`, `@lidarfeed`, `robotcar-motor` |
 | Pi 5, `192.168.4.44` | IMX708 frontkamera, mottak av bakvideo, Hailo-8 på frontbildet, LiDAR-mottak, kartmatching og webkontroll | `robotcar@camera`, `@vision`, `@lidar`, `@mapworker`, `@webapp` |
 | Eksisterende edge, `192.168.4.58` | HTTPS og videresending av video/WebSocket til Pi 5 | nginx, certbot |
 

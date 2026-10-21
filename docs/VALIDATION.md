@@ -1,6 +1,30 @@
 # Verifikasjon
 
-## Gjeldende status 2026-10-09
+## Gjeldende status 2026-10-21
+
+Etter bytte av 5 V-omformer fungerer begge kameraer, men Pi 4 har fortsatt
+periodevise lavspenningsvarsler og LiDAR leverer ikke skanninger. Brukeren
+ba om å fortsette med separat motorforsyning: fire korte manuelle pulser
+gjennom webkontrollen bekreftet hovedretningene, og separate videoer er levert.
+Se [målerapporten](../diagnostics/camera-isolation/RESULTS-2026-10-21.md).
+
+Opptaksverktøyet kan kjøres fra arbeidsmaskinen mens en separat, kontrollert
+bevegelsesprøve utføres. Det styrer aldri motorene selv. Eksempel uten bevegelse:
+
+```bash
+python3 scripts/record_video.py --camera front --seconds 8 \
+  --label 'Stillestående kamerakontroll' \
+  --output /privat/mappe/stasjonar-front.mp4
+```
+
+Hver retning skal få sin egen MP4 og dokumenterte kjøre-/stopptider.
+Kameraopptakene skal beholdes utenfor det offentlige Git-repoet.
+`scripts/record_motion_trial.py` samordner opptak og én kort puls når
+`--drive` er uttrykkelig valgt. Det må brukes med en kontrollert, fri
+kjøreflate og aldri som erstatning for hindringsdeteksjon. Verktøyet
+setter ikke motorenes aktiveringssperre eller autonomiflagg til side.
+
+## Historisk status 2026-10-09
 
 **Oppdatering etter batteribytte samme kveld:** begge Pi-er varsler lav spenning;
 begge kameraer og LiDAR leverer null data. Motorsperren er beholdt, og ingen
