@@ -46,6 +46,7 @@ class RPLidar:
         self.serial.dtr = True
         self.serial.rts = True
         self.command(0x25)
+        time.sleep(.2)  # STOP must finish before another protocol request.
         self.command(0x40)
         time.sleep(2)
         self.serial.reset_input_buffer()
@@ -68,13 +69,17 @@ class RPLidar:
     def scans(self):
         buffer, scan = bytearray(), []
         last = time.monotonic()
+        # The actual A1 can need several seconds of streaming before enough
+        # valid ranges arrive. Publish nothing during that bounded warmup.
+        # Once a usable scan arrives, the normal two-second watchdog applies.
+        timeout = 10
         received, packets, revolutions, largest = 0, 0, 0, 0
         while True:
             data = self.serial.read(max(1, min(self.serial.in_waiting, 4096)))
             received += len(data)
             buffer.extend(data)
-            if time.monotonic() - last > 2:
-                raise TimeoutError('No complete LiDAR revolution for two seconds '
+            if time.monotonic() - last > timeout:
+                raise TimeoutError(f'No complete LiDAR revolution for {timeout} seconds '
                     f'(bytes={received}, packets={packets}, revolutions={revolutions}, '
                     f'max_points={max(largest, len(scan))})')
             while len(buffer) >= 5:
@@ -90,6 +95,7 @@ class RPLidar:
                     largest = max(largest, len(scan))
                     if len(scan) >= 60:
                         last = time.monotonic()
+                        timeout = 2
                         received, packets, revolutions, largest = 0, 0, 0, 0
                         yield scan
                     scan = []
