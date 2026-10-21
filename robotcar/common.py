@@ -6,6 +6,10 @@ from pathlib import Path
 
 RUN = Path(os.environ.get('ROBOTCAR_RUN', '/run/robotcar'))
 DATA = Path(os.environ.get('ROBOTCAR_DATA', '/var/lib/robotcar'))
+# Sparse scans may localise against existing geometry. Navigation and creation
+# of new geometry keep the denser requirement; these are distinct contracts.
+LOCALIZATION_MIN_POINTS = 40
+MAPPING_MIN_POINTS = 60
 
 
 @contextmanager

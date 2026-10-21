@@ -14,7 +14,7 @@ import secrets
 import time
 
 from aiohttp import ClientSession, ClientTimeout, web
-from .common import RUN, atomic_json, read_json, secret
+from .common import RUN, atomic_json, read_json, secret, LOCALIZATION_MIN_POINTS
 
 
 MAX_AGE = .65
@@ -72,7 +72,7 @@ class ScanReceiver:
         if age > MAX_AGE or age < 0:
             raise ValueError('LiDAR network scan is stale')
         points = data.get('points')
-        if not isinstance(points, list) or not 60 <= len(points) <= 4096:
+        if not isinstance(points, list) or not LOCALIZATION_MIN_POINTS <= len(points) <= 4096:
             raise ValueError('LiDAR scan has too few or too many returns')
         for point in points:
             if (not isinstance(point, list) or len(point) != 3 or

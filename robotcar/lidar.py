@@ -9,7 +9,7 @@ import signal
 import struct
 import time
 import uuid
-from .common import RUN, atomic_json
+from .common import RUN, atomic_json, LOCALIZATION_MIN_POINTS
 
 
 def decode_packet(data):
@@ -71,7 +71,7 @@ class RPLidar:
         last = time.monotonic()
         # A complete revolution proves the transport is alive, even when few
         # surfaces reflect. Do not reset a working sensor for poor coverage.
-        # Consumers still reject scans with fewer than 60 valid ranges.
+        # Consumers independently validate coverage and map confidence.
         timeout = 10
         have_start = False
         received, packets, revolutions, largest = 0, 0, 0, 0
@@ -139,7 +139,8 @@ def main():
                            round(d, 4), q] for a, d, q in scan]
                 atomic_json(RUN / 'lidar.json', dict(seq=count, source_id=source_id, monotonic=now, time=time.time(),
                     hz=round(1/max(.001, now-previous), 2), points=points,
-                    error=None if len(points) >= 60 else f'LiDAR scan has only {len(points)} valid returns (60 required)'))
+                    error=None if len(points) >= LOCALIZATION_MIN_POINTS else
+                    f'LiDAR scan has only {len(points)} valid returns ({LOCALIZATION_MIN_POINTS} required)'))
                 previous = now
         except Exception as exc:
             atomic_json(RUN / 'lidar.json', dict(seq=count, source_id=source_id, monotonic=time.monotonic(), time=time.time(),

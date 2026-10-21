@@ -8,7 +8,7 @@ from zipfile import BadZipFile
 import cv2
 import numpy as np
 from aiohttp import web
-from .common import DATA, RUN, atomic_json, read_json
+from .common import DATA, RUN, atomic_json, read_json, LOCALIZATION_MIN_POINTS
 from .mapping import OccupancyMap, wrap
 
 
@@ -90,7 +90,7 @@ class Mapper:
                 return
             scan = read_json(RUN / 'lidar.json')
             age = time.monotonic() - scan.get('monotonic', 0)
-            if scan.get('error') or age > .8 or len(scan.get('points', [])) < 60:
+            if scan.get('error') or age > .8 or len(scan.get('points', [])) < LOCALIZATION_MIN_POINTS:
                 self.error = scan.get('error') or 'LiDAR is stale or has too few returns'
                 if time.monotonic()-self.last_scan > 1:
                     self.map.localized = False

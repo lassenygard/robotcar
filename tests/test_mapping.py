@@ -8,6 +8,44 @@ from robotcar.mapping import OccupancyMap, align_scan, transform, scan_points
 
 
 class MappingTests(unittest.TestCase):
+    def test_sparse_pose_uses_known_map_without_integrating_or_double_counting(self):
+        m = OccupancyMap(240, .05)
+        x, y = np.linspace(-3, 2, 160), np.linspace(-2, 3, 160)
+        world = np.vstack([np.c_[x, x*0-2], np.c_[x, x*0+3],
+                           np.c_[y*0-3, y], np.c_[y*0+2, y],
+                           np.c_[np.linspace(-1, .7, 160), np.full(160, .6)]])
+        for cell in m.cells(world):
+            m.grid[cell[1], cell[0]] = 4
+        m.localized = True
+        original = m.grid.copy()
+
+        def scan(pose, step):
+            c, s = np.cos(pose[2]), np.sin(pose[2])
+            body = (world[::step]-pose[:2]) @ np.array([[c, -s], [s, c]])
+            return np.c_[np.arctan2(body[:, 1], body[:, 0]), np.linalg.norm(body, axis=1), np.full(len(body), 15)]
+
+        first = np.array([.04, -.02, .04])
+        self.assertTrue(m.update(scan(first, 16)))  # 50 returns
+        np.testing.assert_allclose(m.pose, first, atol=.06)
+        np.testing.assert_array_equal(m.grid, original)
+        self.assertEqual(m.revision, 0)
+        second = np.array([.08, -.04, .07])
+        self.assertTrue(m.update(scan(second, 8)))  # Dense again, newer pose
+        np.testing.assert_allclose(m.pose, second, atol=.06)
+        self.assertEqual(m.revision, 1)
+
+    def test_sparse_input_cannot_create_map_or_localise_on_a_single_wall(self):
+        m = OccupancyMap()
+        scan = [[a, 2, 15] for a in np.linspace(-math.pi, math.pi, 45)]
+        self.assertFalse(m.update(scan))
+        self.assertFalse(m.localized)
+        self.assertEqual(np.count_nonzero(m.grid), 0)
+        wall = np.c_[np.linspace(-2, 2, 45), np.full(45, 1.)]
+        scan = np.c_[np.arctan2(wall[:, 1], wall[:, 0]), np.linalg.norm(wall, axis=1), np.full(45, 15)]
+        m.localized = True
+        self.assertFalse(m.update(scan))
+        self.assertFalse(m.relocalize(scan))
+
     def test_icp_recovers_measured_motion(self):
         rng = np.random.default_rng(7)
         reference = rng.uniform(-3, 3, (300, 2))

@@ -19,6 +19,14 @@ def frame(sequence=1):
 
 
 class ScanAgeTests(unittest.TestCase):
+    def test_sparse_localization_input_has_a_strict_lower_bound(self):
+        sample = frame()
+        sample['points'] = sample['points'][:40]
+        self.assertEqual(len(ScanReceiver().receive(sample, NONCE, 10, 10.05)['points']), 40)
+        sample['points'].pop()
+        with self.assertRaisesRegex(ValueError, 'too few'):
+            ScanReceiver().receive(sample, NONCE, 10, 10.05)
+
     def test_network_delay_is_counted_without_sharing_clocks(self):
         scan = ScanReceiver().receive(frame(), NONCE, 1000, 1000.05)
         self.assertAlmostEqual(scan['monotonic'], 999.9)

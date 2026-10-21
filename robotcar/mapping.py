@@ -16,7 +16,7 @@ import numpy as np
 from scipy.ndimage import distance_transform_edt, binary_dilation
 from scipy.optimize import minimize
 from scipy.spatial import cKDTree
-from .common import atomic_file
+from .common import atomic_file, LOCALIZATION_MIN_POINTS, MAPPING_MIN_POINTS
 
 
 def wrap(angle):
@@ -30,12 +30,19 @@ def transform(points, pose):
 
 def scan_points(scan):
     a = np.asarray(scan, dtype=float)
-    if a.ndim != 2 or a.shape[0] < 60 or a.shape[1] < 2:
-        raise ValueError('at least 60 valid lidar returns are required')
+    if a.ndim != 2 or a.shape[0] < LOCALIZATION_MIN_POINTS or a.shape[1] < 2:
+        raise ValueError(f'at least {LOCALIZATION_MIN_POINTS} valid lidar returns are required')
     a = a[np.isfinite(a).all(axis=1) & (a[:, 1] > .12) & (a[:, 1] < 8)]
-    if len(a) < 60:
+    if len(a) < LOCALIZATION_MIN_POINTS:
         raise ValueError('not enough valid lidar returns')
     return np.column_stack((np.cos(a[:, 0])*a[:, 1], np.sin(a[:, 0])*a[:, 1]))[::max(1, len(a)//300)]
+
+
+def sparse_observable(points):
+    """A short wall segment alone cannot constrain a sparse pose estimate."""
+    sectors = np.floor((np.arctan2(points[:, 1], points[:, 0])+math.pi)/(math.pi/4)).astype(int)
+    return (len(np.unique(sectors % 8)) >= 3 and
+            np.linalg.eigvalsh(np.cov(points.T))[0] > .02)
 
 
 def align_scan(points, reference, max_distance=.45):
@@ -114,7 +121,23 @@ class OccupancyMap:
 
     def update(self, scan):
         points = scan_points(scan)
-        if self.previous is None:
+        sparse = len(points) < MAPPING_MIN_POINTS
+        if sparse and not sparse_observable(points):
+            self.confidence, self.localized = 0.0, False
+            return False
+        if sparse or (self.previous is not None and len(self.previous) < MAPPING_MIN_POINTS):
+            # Match an existing map, never bootstrap or extend it from sparse
+            # data. Avoid ICP against a sparse previous frame; its pose has
+            # already changed, so reusing an older dense frame would double-count.
+            if not self.localized or np.count_nonzero(self.grid > .8) < 30:
+                self.confidence, self.localized = 0.0, False
+                return False
+            pose, score = self.refine(points, self.pose, radius=.12, yaw=.10)
+            if score < .80:
+                self.confidence, self.localized = score, False
+                return False
+            self.pose, self.confidence, self.localized = pose, score, True
+        elif self.previous is None:
             if np.count_nonzero(self.grid) == 0:
                 self.pose[:] = 0
                 self.localized, self.confidence = True, 1.0
@@ -136,7 +159,7 @@ class OccupancyMap:
                 pose, score = refined, min(score, map_score)
             self.pose, self.confidence, self.localized = pose, score, True
         self.previous = points
-        if self.mapping:
+        if self.mapping and not sparse:
             self.integrate(points)
         return True
 
@@ -156,6 +179,10 @@ class OccupancyMap:
 
     def relocalize(self, scan, visual_candidates=None):
         points = scan_points(scan)
+        sparse = len(points) < MAPPING_MIN_POINTS
+        if sparse and not sparse_observable(points):
+            self.confidence, self.localized = 0.0, False
+            return False
         field = self.distance_field()
         if np.count_nonzero(self.grid > .8) < 30:
             raise ValueError('map has too few occupied cells')
@@ -181,7 +208,7 @@ class OccupancyMap:
         # Do not localise in repeated corridors if a distant hypothesis fits equally well.
         ambiguous = any(s > score-.06 and (np.linalg.norm(p[:2]-best[:2]) > .8 or
                         abs(wrap(p[2]-best[2])) > .6) for p, s in fits[1:])
-        if score < .65 or ambiguous:
+        if score < (.80 if sparse else .65) or ambiguous:
             self.localized, self.confidence = False, score
             return False
         self.pose, self.confidence, self.localized = best, score, True

@@ -33,6 +33,7 @@ class RelocalisationTests(unittest.TestCase):
         scan = np.c_[np.arctan2(wall[:,1],wall[:,0]),np.linalg.norm(wall,axis=1),np.full(len(wall),20)]
         self.assertFalse(m.relocalize(scan))
         self.assertFalse(m.localized)
+        self.assertFalse(m.relocalize(scan[::16]))  # Sparse input remains ambiguous.
 
 
 if __name__ == '__main__':

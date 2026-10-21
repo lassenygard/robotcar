@@ -24,7 +24,8 @@ class NavigationTests(unittest.TestCase):
     def test_missing_stale_or_close_lidar_blocks_motion(self):
         nav=Navigator(None,None)
         for scan in [{}, {'monotonic':time.monotonic()-2, 'points':[[0,2,10]]*100},
-                     {'monotonic':time.monotonic(), 'points':[[0,.3,10]]*100}]:
+                     {'monotonic':time.monotonic(), 'points':[[0,.3,10]]*100},
+                     {'monotonic':time.monotonic(), 'points':[[0,2,10]]*50}]:
             with patch('robotcar.navigation.read_json',return_value=scan):
                 with self.assertRaises(ValueError):
                     nav.obstacle_check(.25,0)
