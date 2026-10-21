@@ -9,9 +9,12 @@ kartlegging og webkontroll kjører på Pi 5.
 bilder igjen. Etter brukerens beskjed om separat motorforsyning er framover,
 bakover og begge rotasjonsretninger prøvd med korte pulser gjennom
 webkontrollen. Fire separate MP4-opptak er levert privat i chatten.
-Pi 4 varsler fortsatt periodevis lav spenning, LiDAR leverer ikke skanninger,
-og bakutsynet er tildekket. Autonomi og full 360-graders gjenlokalisering
-gjenstår. Se [ny målerapport](diagnostics/camera-isolation/RESULTS-2026-10-21.md).
+LiDAR-kommunikasjonen er gjenopprettet, men måledekningen varierer.
+Posisjon mot kjent kart kan også bruke sparsomme skanninger med strengere
+kartkontroll; automatisk kjøring beholder kravet om minst 60 returer.
+Kartposisjonen blir fortsatt usikker etter rotasjon, så 360-gradersprøven
+er ikke bestått. Pi 4 varsler periodevis lav spenning, og bakutsynet er
+tildekket. Autonomi er fortsatt deaktivert. Se [ny målerapport](diagnostics/camera-isolation/RESULTS-2026-10-21.md).
 
 **Status 2026-10-09:** RPLiDAR fungerer med vanlig seriell lesing etter at
 USB-kabelen ble flyttet til Pi 4. Omtrent 7 skanninger/s sendes til Pi 5.

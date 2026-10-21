@@ -3,9 +3,13 @@
 ## Gjeldende status 2026-10-21
 
 Etter bytte av 5 V-omformer fungerer begge kameraer, men Pi 4 har fortsatt
-periodevise lavspenningsvarsler og LiDAR leverer ikke skanninger. Brukeren
+periodevise lavspenningsvarsler. LiDAR-kommunikasjonen er gjenopprettet,
+men mange skanninger har få gyldige avstander. Brukeren
 ba om å fortsette med separat motorforsyning: fire korte manuelle pulser
 gjennom webkontrollen bekreftet hovedretningene, og separate videoer er levert.
+Stillestående posisjon er forbedret med streng kartkontroll av 40–59
+returer, mens navigasjon fortsatt krever minst 60. Rotasjonstrinn mister
+fortsatt posisjonen; en hel 360-gradersrunde er derfor ikke godkjent.
 Se [målerapporten](../diagnostics/camera-isolation/RESULTS-2026-10-21.md).
 
 Opptaksverktøyet kan kjøres fra arbeidsmaskinen mens en separat, kontrollert
@@ -91,7 +95,7 @@ bildetrekk; ingen kamerabilder er lagt i det offentlige repoet.
 
 ## Automatiske tester
 
-59 tester dekker gjeldende kildekode med
+88 tester dekker gjeldende kildekode med
 `python3 -m unittest discover -s tests -v`. Testene kjøres lokalt og på hver Pi
 før en ny versjon aktiveres. Installert kildeversjon står i
 `/opt/robotcar/current/REVISION`; alle installerte filer har kontrollsummer.
