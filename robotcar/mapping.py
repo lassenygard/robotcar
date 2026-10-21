@@ -146,6 +146,17 @@ class OccupancyMap:
         else:
             delta, score = align_scan(points, self.previous)
             if score < .60:
+                # Different subsets of wall returns can defeat scan-to-scan
+                # ICP even at rest. The accumulated map provides an independent
+                # reference, with a stricter score and bounded pose search.
+                if self.revision >= 5 and sparse_observable(points):
+                    pose, map_score = self.refine(points, self.pose, radius=.12, yaw=.10)
+                    if map_score >= .80:
+                        self.pose, self.confidence, self.localized = pose, map_score, True
+                        self.previous = points
+                        if self.mapping:
+                            self.integrate(points)
+                        return True
                 self.confidence, self.localized = score, False
                 return False
             pose = self.pose.copy()

@@ -34,6 +34,14 @@ class MappingTests(unittest.TestCase):
         np.testing.assert_allclose(m.pose, second, atol=.06)
         self.assertEqual(m.revision, 1)
 
+        # The previous scan sees just one wall, but the new scan sees several.
+        # A consistent established map must recover the pose despite poor ICP.
+        m.revision = 5
+        m.previous = world[:160]
+        self.assertTrue(m.update(scan(second, 8)))
+        np.testing.assert_allclose(m.pose, second, atol=.06)
+        self.assertGreaterEqual(m.confidence, .8)
+
     def test_sparse_input_cannot_create_map_or_localise_on_a_single_wall(self):
         m = OccupancyMap()
         scan = [[a, 2, 15] for a in np.linspace(-math.pi, math.pi, 45)]
