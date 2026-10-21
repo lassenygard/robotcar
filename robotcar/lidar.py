@@ -69,10 +69,11 @@ class RPLidar:
     def scans(self):
         buffer, scan = bytearray(), []
         last = time.monotonic()
-        # The actual A1 can need several seconds of streaming before enough
-        # valid ranges arrive. Publish nothing during that bounded warmup.
-        # Once a usable scan arrives, the normal two-second watchdog applies.
+        # A complete revolution proves the transport is alive, even when few
+        # surfaces reflect. Do not reset a working sensor for poor coverage.
+        # Consumers still reject scans with fewer than 60 valid ranges.
         timeout = 10
+        have_start = False
         received, packets, revolutions, largest = 0, 0, 0, 0
         while True:
             data = self.serial.read(max(1, min(self.serial.in_waiting, 4096)))
@@ -93,12 +94,13 @@ class RPLidar:
                 if new:
                     revolutions += 1
                     largest = max(largest, len(scan))
-                    if len(scan) >= 60:
+                    if have_start:
                         last = time.monotonic()
                         timeout = 2
                         received, packets, revolutions, largest = 0, 0, 0, 0
                         yield scan
                     scan = []
+                    have_start = True
                 if quality and .12 <= distance <= 8:
                     scan.append((angle, distance, quality))
 
@@ -136,7 +138,8 @@ def main():
                 points = [[round(math.atan2(math.sin(-math.radians(a+offset)), math.cos(-math.radians(a+offset))), 5),
                            round(d, 4), q] for a, d, q in scan]
                 atomic_json(RUN / 'lidar.json', dict(seq=count, source_id=source_id, monotonic=now, time=time.time(),
-                    hz=round(1/max(.001, now-previous), 2), points=points, error=None))
+                    hz=round(1/max(.001, now-previous), 2), points=points,
+                    error=None if len(points) >= 60 else f'LiDAR scan has only {len(points)} valid returns (60 required)'))
                 previous = now
         except Exception as exc:
             atomic_json(RUN / 'lidar.json', dict(seq=count, source_id=source_id, monotonic=time.monotonic(), time=time.time(),

@@ -58,7 +58,7 @@ class LidarProtocolTests(unittest.TestCase):
         self.assertEqual(serial.incoming, b'')
         self.assertFalse(serial.dtr)
 
-    def test_sparse_revolutions_still_fail_with_diagnostics(self):
+    def test_missing_complete_revolution_fails_with_diagnostics(self):
         class UART:
             in_waiting = 4096
 
@@ -69,7 +69,7 @@ class LidarProtocolTests(unittest.TestCase):
             with self.assertRaisesRegex(TimeoutError, r'bytes=100, packets=10, revolutions=1, max_points=10'):
                 next(self.device(UART()).scans())
 
-    def test_warmup_never_yields_sparse_scan_and_does_not_extend_live_watchdog(self):
+    def test_sparse_scan_does_not_reset_transport_and_live_watchdog_stays_short(self):
         class UART:
             in_waiting = 4096
             count = 0
@@ -82,11 +82,23 @@ class LidarProtocolTests(unittest.TestCase):
                     return b''.join(packet(i * 6, 1500, new=i == 0) for i in range(60)) + packet(0, 1500)
                 return b''
 
-        with patch('robotcar.lidar.time.monotonic', side_effect=[0, 1, 6, 6, 8.1]):
+        with patch('robotcar.lidar.time.monotonic', side_effect=[0, 1, 6, 6, 6, 8.1]):
             scans = self.device(UART()).scans()
+            self.assertEqual(len(next(scans)), 2)
             self.assertEqual(len(next(scans)), 60)
             with self.assertRaisesRegex(TimeoutError, 'for 2 seconds'):
                 next(scans)
+
+    def test_initial_partial_revolution_is_not_published(self):
+        class UART:
+            in_waiting = 4096
+
+            def read(self, size):
+                return (b''.join(packet(i, 1500, new=False) for i in range(60)) +
+                        packet(0, 1500) + packet(1, 1500, new=False) + packet(0, 1500))
+
+        with patch('robotcar.lidar.time.monotonic', return_value=0):
+            self.assertEqual(len(next(self.device(UART()).scans())), 2)
 
     def test_units_and_new_scan_flag(self):
         new, q, angle, distance = decode_packet(packet(123.25, 1500))
