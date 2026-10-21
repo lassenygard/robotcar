@@ -121,7 +121,8 @@ async def trial(args):
                 event('preflight', motor=motor)
                 recorder = await asyncio.create_subprocess_exec(
                     sys.executable, str(Path(__file__).with_name('record_video.py')),
-                    '--url', base, '--credentials', str(args.credentials), '--seconds', '6',
+                    '--url', base, '--credentials', str(args.credentials),
+                    '--seconds', '12' if args.rotation_step else '6',
                     '--camera', 'front', '--label', args.direction,
                     '--output', str(output), '--ready-file', str(ready),
                     stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE)
@@ -133,6 +134,20 @@ async def trial(args):
                 event('video_ready')
                 await asyncio.sleep(1.5)
                 check_video()
+                if args.rotation_step:
+                    # Wait while disarmed for an actually fresh pose, rather
+                    # than gambling on the status at the end of the video lead-in.
+                    async with asyncio.timeout(4):
+                        while True:
+                            check_video()
+                            position = state.get('map', {})
+                            if (position.get('localized') and position.get('age_s', 99) < .25
+                                    and position.get('confidence', 0) >= .8
+                                    and not state.get('lidar', {}).get('error')):
+                                break
+                            await asyncio.sleep(.03)
+                if recorder.returncode is not None:
+                    raise ValueError('Recording ended before arming.')
                 arm_attempted = True
                 await send('arm')
                 # Wait for a fresh ticket after the arm acknowledgement.
