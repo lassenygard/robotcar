@@ -8,8 +8,14 @@ men mange skanninger har få gyldige avstander. Brukeren
 ba om å fortsette med separat motorforsyning: fire korte manuelle pulser
 gjennom webkontrollen bekreftet hovedretningene, og separate videoer er levert.
 Stillestående posisjon er forbedret med streng kartkontroll av 40–59
-returer, mens navigasjon fortsatt krever minst 60. Rotasjonstrinn mister
-fortsatt posisjonen; en hel 360-gradersrunde er derfor ikke godkjent.
+returer, mens navigasjon fortsatt krever minst 60. Etter en ytterligere
+retting av karttilpasningen er en hel 360-gradersrunde prøvd i korte trinn.
+Det samme utsynet ble gjenkjent av kameraet. Lagret kart ble lastet inn på
+nytt med først ukjent posisjon, deretter bekreftet posisjon etter 0,33 s.
+Beregnet vinkelavvik fra start var under én grad, men beregnet
+posisjonsavvik var omtrent 20 cm. Dette verifiserer gjenkjenning etter
+rotasjon; det beviser ikke presis rotasjon rundt bilens sentrum eller
+absolutt posisjonsnøyaktighet. Autonomi og kjørekalibrering er fortsatt av.
 Se [målerapporten](../diagnostics/camera-isolation/RESULTS-2026-10-21.md).
 
 Opptaksverktøyet kan kjøres fra arbeidsmaskinen mens en separat, kontrollert
@@ -27,6 +33,12 @@ Kameraopptakene skal beholdes utenfor det offentlige Git-repoet.
 `--drive` er uttrykkelig valgt. Det må brukes med en kontrollert, fri
 kjøreflate og aldri som erstatning for hindringsdeteksjon. Verktøyet
 setter ikke motorenes aktiveringssperre eller autonomiflagg til side.
+
+`scripts/combine_motion_clips.py` kan lage et samleopptak av dokumenterte
+prøver med bekreftet motorstopp. Det forkorter pausene, beholder normal
+avspillingshastighet og skriver en privat manifestfil med kildefilenes
+SHA-256-kontrollsummer. Originalopptakene beholdes. Den gjennomførte runden
+har 14 delopptak, og samlefilen er 34,84 s med 25 fps og H.264/640×480.
 
 ## Historisk status 2026-10-09
 

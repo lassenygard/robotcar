@@ -12,11 +12,15 @@ webkontrollen. Fire separate MP4-opptak er levert privat i chatten.
 LiDAR-kommunikasjonen er gjenopprettet, men måledekningen varierer.
 Posisjon mot kjent kart kan også bruke sparsomme skanninger med strengere
 kartkontroll; automatisk kjøring beholder kravet om minst 60 returer.
-Kartposisjonen blir fortsatt usikker etter rotasjon, så 360-gradersprøven
-er ikke bestått. Pi 4 varsler periodevis lav spenning, og bakutsynet er
-tildekket. Autonomi er fortsatt deaktivert. Se [ny målerapport](diagnostics/camera-isolation/RESULTS-2026-10-21.md).
+En hel rotasjon i korte trinn er nå gjennomført med gjenkjenning av
+startutsynet. Det lagrede kartet ble lastet inn igjen, og LiDAR og kameratrekk
+bekreftet posisjonen etter 0,33 s. Beregnet vinkelavvik fra start var under
+én grad, mens beregnet posisjonsavvik var omtrent 20 cm; dette er ikke en
+uavhengig nøyaktighetsmåling. Pi 4 varsler periodevis lav spenning, og bakutsynet
+er tildekket. Kjørekalibrering og autonomi er fortsatt deaktivert. Se
+[ny målerapport](diagnostics/camera-isolation/RESULTS-2026-10-21.md).
 
-**Status 2026-10-09:** RPLiDAR fungerer med vanlig seriell lesing etter at
+**Historisk status 2026-10-09:** RPLiDAR fungerer med vanlig seriell lesing etter at
 USB-kabelen ble flyttet til Pi 4. Omtrent 7 skanninger/s sendes til Pi 5.
 Et kart fra bilens stillestående plassering er lagret og lastet inn igjen;
 LiDAR og kameratrekk har bekreftet posisjonen på nytt med IMX708-referanse
@@ -36,7 +40,7 @@ Se [resultatene fra kamerafordelingen](diagnostics/camera-isolation/RESULTS-2026
 [oppsett og gjenoppretting](diagnostics/camera-isolation/README.md) og
 [historikken fra kabelforsøkene](diagnostics/camera-isolation/RESULTS-2026-10-08.md).
 
-**Senere batteriprøve samme kveld:** etter kontrollert avslåing og overgang til
+**Historisk batteriprøve 2026-10-09:** etter kontrollert avslåing og overgang til
 fulladet batteri varsler begge Pi-er igjen lav spenning. Pi 5 måler 4,66–4,70 V;
 ingen av kameraene eller LiDAR leverer data. Resultatene ovenfor gjelder
 vanlig strømforsyning. **Motorene forblir sperret på grunn av sensorfeilene.**
@@ -52,8 +56,8 @@ kalibrering og frakobling av kablene. Kode og dokumentasjon er publisert på
 - Lokalt kontrollpanel: `http://192.168.4.44:8080`.
 - Ekstern adresse: `https://robotcar.nygardene.no` — krever at Pi 5 er på nett.
 - Innlogging ligger i `/home/pi/.ssh/robotcar-web-login.conf` på arbeidsmaskinen.
-- Kartet `stue-stasjonar-20261007` viser det som er målt fra den nåværende
-  plasseringen; det er ikke et ferdig kart over hele leiligheten.
+- Kartet `stue-360-20261021` viser rommet målt under rotasjonsprøven og har
+  16 visuelle referanser; det er ikke et ferdig kart over hele leiligheten.
 - Under kabeltilkobling er motortjenesten sperret uavhengig av knappene nedenfor.
 - Trykk **Aktiver motorer**, og hold en pil eller W/A/S/D. Slipp for å stoppe.
 - Mellomrom og den røde **STOPP**-knappen stopper kjøring og navigasjon.
